@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Implements specs/001-amore-jewelry-catalogue/contracts/security-rules.md:
+// public read on product photos, authenticated-only write, with a
+// content-type/size check as defense-in-depth alongside client-side
+// compression (web/src/composables/useImageCompression.ts).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /product-photos/{allPaths=**} {
+      allow read: if true;
+      // create/update (i.e. actual file uploads) carry a request.resource to
+      // validate; delete does not, so it is authorized separately.
+      allow create, update: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+  }
+}

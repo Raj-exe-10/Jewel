@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind v4 uses CSS-based theme configuration instead of tailwind.config.js.
+ * Placeholder brand tokens below — replace with real Amore brand colors/fonts
+ * once provided (see Requirements/Website_and_App_Requirements_Document.md, Section 8).
+ */
+@theme {
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-amore-cream: #faf6f0;
+  --color-amore-charcoal: #262220;
+  --color-amore-gold: #b08d57;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-amore-charcoal);
+}
