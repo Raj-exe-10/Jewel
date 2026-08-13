@@ -1,6 +1,7 @@
 import { addDoc, collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { defineStore } from 'pinia'
 import { auth, db } from '../firebase/config'
+import { normalizeTaxonomyName, planTaxonomyCollapse } from '../lib/taxonomyDuplicates'
 import {
   EMPTY_FILTERS,
   type CatalogueFilters,
@@ -117,8 +118,13 @@ export const useCatalogueStore = defineStore('catalogue', {
     },
 
     async addTaxonomyEntry(taxonomy: TaxonomyName, name: string) {
+      const trimmed = name.trim()
+      const normalized = normalizeTaxonomyName(trimmed)
+      if (this[taxonomy].some((item) => normalizeTaxonomyName(item.name) === normalized)) {
+        throw new Error(`A ${taxonomy} entry named "${trimmed}" already exists.`)
+      }
       const existingCount = this[taxonomy].length
-      const input: NamedTaxonomyInput = { name, sortOrder: existingCount }
+      const input: NamedTaxonomyInput = { name: trimmed, sortOrder: existingCount }
       await addDoc(collection(db, taxonomy), { ...input, createdAt: Date.now() })
     },
 
@@ -127,6 +133,35 @@ export const useCatalogueStore = defineStore('catalogue', {
         throw new Error(`Cannot remove: still referenced by one or more products.`)
       }
       await deleteDoc(doc(db, taxonomy, id))
+    },
+
+    async collapseDuplicateTaxonomies() {
+      const plan = planTaxonomyCollapse({
+        categories: this.categories,
+        collections: this.collections,
+        styleTags: this.styleTags,
+        products: this.products,
+      })
+      if (plan.deleteIds.length === 0 && plan.productUpdates.length === 0) return
+
+      const uid = auth.currentUser?.uid ?? 'unknown'
+      const now = Date.now()
+      await Promise.all(
+        plan.productUpdates.map((update) =>
+          setDoc(
+            doc(db, 'products', update.id),
+            {
+              categoryId: update.categoryId,
+              collectionId: update.collectionId,
+              styleTagIds: update.styleTagIds,
+              updatedAt: now,
+              updatedBy: uid,
+            },
+            { merge: true },
+          ),
+        ),
+      )
+      await Promise.all(plan.deleteIds.map((entry) => deleteDoc(doc(db, entry.taxonomy, entry.id))))
     },
   },
 })

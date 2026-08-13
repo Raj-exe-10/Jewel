@@ -21,8 +21,10 @@ const StubPage = { template: '<div />' }
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'public-home', component: StubPage },
   { path: '/admin/login', name: 'admin-login', component: StubPage },
+  { path: '/admin/homepage', name: 'admin-homepage', component: StubPage, meta: { requiresAuth: true } },
   { path: '/admin/products', name: 'admin-products', component: StubPage, meta: { requiresAuth: true } },
-  { path: '/admin', redirect: '/admin/products' },
+  { path: '/admin/taxonomies', name: 'admin-taxonomies', component: StubPage, meta: { requiresAuth: true } },
+  { path: '/admin', redirect: '/admin/homepage' },
 ]
 
 function buildRouter() {
@@ -44,7 +46,7 @@ describe('router navigation guard', () => {
 
   it('redirects an unauthenticated visitor away from /admin to /admin/login', async () => {
     const router = buildRouter()
-    await router.push('/admin/products')
+    await router.push('/admin/homepage')
     await router.isReady()
 
     expect(router.currentRoute.value.path).toBe('/admin/login')

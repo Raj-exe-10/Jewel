@@ -2,10 +2,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Category, Collection, Product, StyleTag } from '../../../src/types/catalogue'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {} }))
+vi.mock('../../../src/firebase/config', () => ({ db: {}, auth: { currentUser: { uid: 'staff-1' } } }))
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   onSnapshot: vi.fn(),
+  doc: vi.fn((_db: unknown, col: string, id: string) => ({ path: `${col}/${id}` })),
+  addDoc: vi.fn(),
+  setDoc: vi.fn(),
+  deleteDoc: vi.fn(),
 }))
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
@@ -177,5 +181,14 @@ describe('catalogue store filtering/search', () => {
     expect(store.categories).toEqual([category])
     expect(store.collections).toEqual([collection])
     expect(store.styleTags).toEqual([styleTag])
+  })
+
+  it('rejects adding a taxonomy entry whose name already exists (case-insensitive)', async () => {
+    const { addDoc } = await import('firebase/firestore')
+    const store = useCatalogueStore()
+    store.$patch({ categories: [category] })
+
+    await expect(store.addTaxonomyEntry('categories', '  necklace ')).rejects.toThrow(/already exists/i)
+    expect(addDoc).not.toHaveBeenCalled()
   })
 })

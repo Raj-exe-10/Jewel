@@ -1,14 +1,19 @@
 /**
- * Seeds placeholder categories/collections/style tags/products and 3 staff
- * auth accounts into the local Firebase Emulator Suite for development and
- * demos. Uses firebase-admin so it writes directly, bypassing security
- * rules (this must never be pointed at a real Firebase project).
+ * Seeds placeholder categories/collections/style tags/products, homepage
+ * sections, and 3 staff auth accounts into the local Firebase Emulator Suite
+ * for development and demos. Uses firebase-admin so it writes directly,
+ * bypassing security rules (this must never be pointed at a real Firebase
+ * project).
  *
  * Usage: with emulators running (npm run emulators), run `npm run seed:emulator`.
+ * Re-runs are idempotent for taxonomies (upsert by name) and skip product
+ * reseeding when products already exist.
  */
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { DEFAULT_HOMEPAGE_SECTIONS, toFirestoreSection } from '../src/data/defaultSections'
+import { findDuplicateGroups, normalizeTaxonomyName } from '../src/lib/taxonomyDuplicates'
 
 process.env.FIRESTORE_EMULATOR_HOST ??= '127.0.0.1:8080'
 process.env.FIREBASE_AUTH_EMULATOR_HOST ??= '127.0.0.1:9099'
@@ -71,17 +76,87 @@ function placeholderPhoto(categoryName: string): string {
   )
 }
 
+async function collapseTaxonomyDuplicates(collectionName: string) {
+  const snap = await db.collection(collectionName).get()
+  const items = snap.docs.map((d) => ({
+    id: d.id,
+    name: String(d.data().name ?? ''),
+    createdAt: Number(d.data().createdAt ?? 0),
+  }))
+  const groups = findDuplicateGroups(items)
+  const remap = new Map<string, string>()
+  for (const group of groups) {
+    for (const dropId of group.dropIds) {
+      remap.set(dropId, group.keepId)
+      await db.collection(collectionName).doc(dropId).delete()
+    }
+  }
+  return remap
+}
+
+async function remapProductTaxonomyIds(
+  categoryRemap: Map<string, string>,
+  collectionRemap: Map<string, string>,
+  styleTagRemap: Map<string, string>,
+) {
+  if (categoryRemap.size === 0 && collectionRemap.size === 0 && styleTagRemap.size === 0) return
+  const products = await db.collection('products').get()
+  for (const productDoc of products.docs) {
+    const data = productDoc.data()
+    const categoryId = categoryRemap.get(data.categoryId) ?? data.categoryId
+    const collectionId =
+      data.collectionId == null
+        ? null
+        : (collectionRemap.get(data.collectionId) ?? data.collectionId)
+    const styleTagIds = [
+      ...new Set((data.styleTagIds as string[] | undefined)?.map((id) => styleTagRemap.get(id) ?? id) ?? []),
+    ]
+    const changed =
+      categoryId !== data.categoryId ||
+      collectionId !== data.collectionId ||
+      JSON.stringify(styleTagIds) !== JSON.stringify(data.styleTagIds ?? [])
+    if (changed) {
+      await productDoc.ref.update({ categoryId, collectionId, styleTagIds })
+    }
+  }
+}
+
 async function seedTaxonomy(collectionName: string, names: string[]) {
+  const existing = await db.collection(collectionName).get()
+  const byName = new Map<string, string>()
+  for (const d of existing.docs) {
+    const name = String(d.data().name ?? '')
+    const key = normalizeTaxonomyName(name)
+    if (!byName.has(key)) byName.set(key, d.id)
+  }
+
   const ids: string[] = []
   for (const [index, name] of names.entries()) {
+    const key = normalizeTaxonomyName(name)
+    const existingId = byName.get(key)
+    if (existingId) {
+      await db.collection(collectionName).doc(existingId).set(
+        { name, sortOrder: index },
+        { merge: true },
+      )
+      ids.push(existingId)
+      continue
+    }
     const ref = db.collection(collectionName).doc()
     await ref.set({ name, sortOrder: index, createdAt: Date.now() })
+    byName.set(key, ref.id)
     ids.push(ref.id)
   }
   return ids
 }
 
 async function seedProducts(categoryIds: string[], collectionIds: string[], styleTagIds: string[]) {
+  const existingProducts = await db.collection('products').limit(1).get()
+  if (!existingProducts.empty) {
+    console.log('Products already present; skipping product seed.')
+    return
+  }
+
   const styleGroups: Array<'traditional' | 'modern' | null> = ['traditional', 'modern', null]
   const now = Date.now()
 
@@ -116,6 +191,18 @@ async function seedProducts(categoryIds: string[], collectionIds: string[], styl
   }
 }
 
+async function seedHomepageSections() {
+  for (const section of DEFAULT_HOMEPAGE_SECTIONS) {
+    const { id } = section
+    await db.collection('homepageSections').doc(id).set({
+      ...toFirestoreSection(section),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      updatedBy: 'seed-script',
+    })
+  }
+}
+
 async function seedStaffAccounts() {
   for (const account of staffAccounts) {
     try {
@@ -133,16 +220,22 @@ async function seedStaffAccounts() {
 
 async function main() {
   console.log(`Seeding emulator data for project "${PROJECT_ID}"...`)
+  const categoryRemap = await collapseTaxonomyDuplicates('categories')
+  const collectionRemap = await collapseTaxonomyDuplicates('collections')
+  const styleTagRemap = await collapseTaxonomyDuplicates('styleTags')
+  await remapProductTaxonomyIds(categoryRemap, collectionRemap, styleTagRemap)
+
   const categoryIds = await seedTaxonomy('categories', categories)
   const collectionIds = await seedTaxonomy('collections', collections)
   const styleTagIds = await seedTaxonomy('styleTags', styleTags)
   await seedProducts(categoryIds, collectionIds, styleTagIds)
+  await seedHomepageSections()
   await seedStaffAccounts()
-  console.log('Done. 3 staff accounts + 20 placeholder products seeded.')
+  console.log('Done. 3 staff accounts + placeholder products + homepage sections seeded.')
   process.exit(0)
 }
 
 main().catch((error) => {
-  console.error('Seeding failed:', error)
+  console.error(error)
   process.exit(1)
 })

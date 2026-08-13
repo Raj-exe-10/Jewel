@@ -51,6 +51,8 @@ test.describe('Manager panel (US3)', () => {
     await page.locator('input[type="password"]').fill(OWNER_PASSWORD)
     await page.getByRole('button', { name: 'Sign in' }).click()
 
+    await expect(page).toHaveURL(/\/admin\/homepage$/)
+    await page.getByTestId('nav-products').click()
     await expect(page).toHaveURL(/\/admin\/products$/)
 
     await page.getByTestId('add-product-button').click()
@@ -77,7 +79,34 @@ test.describe('Manager panel (US3)', () => {
   })
 
   test('unauthenticated visitors are redirected away from the manager panel', async ({ page }) => {
-    await page.goto('/admin/products')
+    await page.goto('/admin/homepage')
     await expect(page).toHaveURL(/\/admin\/login$/)
+  })
+
+  test('staff can hide a homepage section and it disappears from the public storefront', async ({ page, context }) => {
+    await page.goto('/admin/login')
+    await page.locator('input[type="email"]').fill(OWNER_EMAIL)
+    await page.locator('input[type="password"]').fill(OWNER_PASSWORD)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/admin\/homepage$/)
+
+    const aboutRow = page.locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })
+    if ((await aboutRow.count()) === 0) {
+      await page.getByTestId('restore-defaults').click()
+      await page.getByTestId('confirm-dialog-confirm').click()
+      await expect(page.locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })).toBeVisible({
+        timeout: 15000,
+      })
+    }
+
+    await page
+      .locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })
+      .getByTestId('toggle-section-visibility')
+      .click()
+
+    const publicPage = await context.newPage()
+    await publicPage.goto('/')
+    await expect(publicPage.getByRole('heading', { name: 'The Hands Behind Amore' })).toHaveCount(0, { timeout: 15000 })
+    await publicPage.close()
   })
 })

@@ -1,4 +1,5 @@
 import { useCatalogueStore } from '../stores/catalogue'
+import type { CtaTarget } from '../types/homepage'
 
 /**
  * Central place for "pick a taxonomy entry, filter the catalogue, scroll to
@@ -45,6 +46,18 @@ export function useCatalogueNav() {
     scrollToCatalogue()
   }
 
+  function runCta(target: CtaTarget) {
+    if (target.kind === 'bridal') {
+      filterByBridal()
+      return
+    }
+    if (target.kind === 'catalogue') {
+      clearAndScrollToCatalogue()
+      return
+    }
+    scrollToSection(target.anchorId)
+  }
+
   return {
     scrollToSection,
     scrollToCatalogue,
@@ -53,5 +66,7 @@ export function useCatalogueNav() {
     filterByStyleTag,
     filterByBridal,
     clearAndScrollToCatalogue,
+    runCta,
   }
 }
+

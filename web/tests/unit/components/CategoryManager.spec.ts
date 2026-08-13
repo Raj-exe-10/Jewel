@@ -30,14 +30,15 @@ describe('CategoryManager', () => {
     expect(wrapper.find('[data-testid="reference-warning"]').exists()).toBe(false)
   })
 
-  it('blocks deletion and shows a warning when the entry is still referenced by a product', async () => {
+  it('blocks adding a duplicate name (case-insensitive) and shows an error', async () => {
     const wrapper = mount(CategoryManager, {
-      props: { items, label: 'Category', isReferenced: (id: string) => id === 'cat-ring' },
+      props: { items, label: 'Category', isReferenced: () => false },
     })
 
-    await wrapper.get('[data-testid="remove-item-cat-ring"]').trigger('click')
+    await wrapper.get('[data-testid="new-item-name"]').setValue('necklace')
+    await wrapper.get('[data-testid="add-item"]').trigger('click')
 
-    expect(wrapper.emitted('remove')).toBeUndefined()
-    expect(wrapper.get('[data-testid="reference-warning"]').text()).toMatch(/still (used|referenced)/i)
+    expect(wrapper.emitted('add')).toBeUndefined()
+    expect(wrapper.get('[data-testid="duplicate-warning"]').text()).toMatch(/already exists/i)
   })
 })

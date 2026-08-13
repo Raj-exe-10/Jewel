@@ -3,12 +3,18 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
-import { VISUAL_VIDEOS } from '../../data/storefrontMedia'
+import { defaultSectionByAnchor } from '../../data/defaultSections'
+import type { HomepageSection, VideoCarouselContent } from '../../types/homepage'
 import SectionHeading from './SectionHeading.vue'
 
+const props = defineProps<{ section?: HomepageSection }>()
+
 const nav = useCatalogueNav()
-const tiles = VISUAL_VIDEOS
-const slideCount = computed(() => tiles.length)
+const resolved = computed(() => props.section ?? defaultSectionByAnchor('shop-the-visuals'))
+const tiles = computed(() =>
+  [...((resolved.value.content as VideoCarouselContent).videos ?? [])].sort((a, b) => a.sortOrder - b.sortOrder),
+)
+const slideCount = computed(() => tiles.value.length)
 
 const { emblaRef, scrollPrev, scrollNext } = useCarousel(
   { align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
@@ -23,12 +29,12 @@ function onTileClick() {
 </script>
 
 <template>
-  <section id="shop-the-visuals" class="mx-auto max-w-6xl px-4 pt-14">
+  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 pt-14">
     <div class="relative mb-2">
       <SectionHeading
-        title="Shop the Visuals"
-        subtitle="Watch our pieces in motion — bridal edits, festive looks, and everyday glow"
-        icon="✦"
+        :title="resolved.title"
+        :subtitle="resolved.subtitle"
+        :icon="resolved.icon"
       />
       <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
         <button
@@ -56,7 +62,7 @@ function onTileClick() {
       <div class="flex touch-pan-y">
         <button
           v-for="(tile, index) in tiles"
-          :key="tile.label"
+          :key="tile.id"
           type="button"
           data-testid="shop-visuals-tile"
           class="group relative mr-4 min-w-0 flex-[0_0_70%] overflow-hidden rounded-2xl sm:flex-[0_0_40%] lg:flex-[0_0_28%]"
@@ -64,8 +70,8 @@ function onTileClick() {
         >
           <video
             class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
-            :poster="tile.poster"
-            :src="tile.src"
+            :poster="tile.posterUrl"
+            :src="tile.videoUrl"
             muted
             loop
             playsinline

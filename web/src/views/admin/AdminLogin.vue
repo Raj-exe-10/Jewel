@@ -12,7 +12,7 @@ const password = ref('')
 async function onSubmit() {
   await auth.login(email.value, password.value)
   if (auth.currentUser) {
-    await router.push('/admin/products')
+    await router.push('/admin/homepage')
   }
 }
 </script>

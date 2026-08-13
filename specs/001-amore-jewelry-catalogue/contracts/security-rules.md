@@ -38,6 +38,16 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
+
+    match /homepageSections/{sectionId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /homepageConfig/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
 ```
@@ -55,6 +65,22 @@ service firebase.storage {
       allow create, update: if request.auth != null
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+    match /section-media/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+    match /section-videos/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                   && request.resource.size < 50 * 1024 * 1024
+                   && request.resource.contentType.matches('video/.*');
       allow delete: if request.auth != null;
     }
   }
@@ -80,6 +106,18 @@ service firebase.storage {
 | 13 | Authenticated | write | `product-photos/**` with size >= 5MB | DENY |
 | 14 | User A | write | `staff/{uidB}` (another user's mirror doc) | DENY |
 | 15 | User A | write | `staff/{uidA}` (own mirror doc) | ALLOW |
+| 16 | Unauthenticated | read | `homepageSections/{id}` | ALLOW |
+| 17 | Unauthenticated | write | `homepageSections/{id}` | DENY |
+| 18 | Authenticated | write | `homepageSections/{id}` | ALLOW |
+| 19 | Unauthenticated | read | `section-media/**` (Storage) | ALLOW |
+| 20 | Unauthenticated | write | `section-media/**` (Storage) | DENY |
+| 21 | Authenticated | write | `section-media/**` with `contentType: image/jpeg`, size < 5MB | ALLOW |
+| 22 | Authenticated | write | `section-videos/**` with `contentType: video/mp4`, size < 50MB | ALLOW |
+| 23 | Authenticated | write | `section-videos/**` with `contentType: image/jpeg` | DENY |
+| 24 | Unauthenticated | write | `section-videos/**` | DENY |
+| 25 | Unauthenticated | read | `homepageConfig/{id}` | ALLOW |
+| 26 | Unauthenticated | write | `homepageConfig/{id}` | DENY |
+| 27 | Authenticated | write | `homepageConfig/{id}` | ALLOW |
 
 Every row above corresponds to one Vitest test using
 `@firebase/rules-unit-testing`'s `assertSucceeds`/`assertFails` against the

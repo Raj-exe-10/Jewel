@@ -3,18 +3,24 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
+import { defaultSectionByAnchor } from '../../data/defaultSections'
 import { jewelryImageFor } from '../../data/storefrontMedia'
 import { useCatalogueStore } from '../../stores/catalogue'
+import type { HomepageSection, TaxonomyTilesContent } from '../../types/homepage'
 import SectionHeading from './SectionHeading.vue'
+
+const props = defineProps<{ section?: HomepageSection }>()
 
 const catalogue = useCatalogueStore()
 const nav = useCatalogueNav()
+const resolved = computed(() => props.section ?? defaultSectionByAnchor('shop-the-style'))
+const overrides = computed(() => (resolved.value.content as TaxonomyTilesContent).tileImageOverrides ?? {})
 
 const styleCards = computed(() =>
   catalogue.styleTags.map((tag, index) => ({
     id: tag.id,
     name: tag.name,
-    image: jewelryImageFor(tag.name, index),
+    image: overrides.value[tag.id] ?? jewelryImageFor(tag.name, index),
   })),
 )
 const slideCount = computed(() => styleCards.value.length)
@@ -28,12 +34,12 @@ void emblaRef
 </script>
 
 <template>
-  <section v-if="styleCards.length > 0" class="mx-auto max-w-6xl px-4 py-14">
+  <section v-if="styleCards.length > 0" :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 py-14">
     <div class="relative mb-2">
       <SectionHeading
-        title="Shop the Style"
-        subtitle="Find your piece by occasion or mood"
-        icon="✧"
+        :title="resolved.title"
+        :subtitle="resolved.subtitle"
+        :icon="resolved.icon"
       />
       <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
         <button

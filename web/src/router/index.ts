@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory, type RouterHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
-// FR-022 / Constitution Principle III: the public storefront is a single
-// page ("/"); only the manager panel gets its own protected route group.
 export const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -15,21 +13,29 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('../views/admin/AdminLogin.vue'),
   },
   {
+    path: '/admin/homepage',
+    name: 'admin-homepage',
+    component: () => import('../views/admin/AdminHomepage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/admin/products',
     name: 'admin-products',
     component: () => import('../views/admin/AdminProductList.vue'),
     meta: { requiresAuth: true },
   },
   {
+    path: '/admin/taxonomies',
+    name: 'admin-taxonomies',
+    component: () => import('../views/admin/AdminTaxonomies.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/admin',
-    redirect: '/admin/products',
+    redirect: '/admin/homepage',
   },
 ]
 
-/**
- * Builds a router with the auth guard applied, parameterized by history mode
- * so tests can pass `createMemoryHistory()` instead of the real browser one.
- */
 export function createAppRouter(history: RouterHistory) {
   const appRouter = createRouter({ history, routes })
 

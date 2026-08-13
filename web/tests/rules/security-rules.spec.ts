@@ -169,14 +169,103 @@ describe('Storage: product-photos deletion follows the same write rule', () => {
 })
 
 // Sanity check that the matrix above covers exactly the 15 documented rows.
+describe('Firestore: homepageSections', () => {
+  it('row 16: unauthenticated read is ALLOWED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertSucceeds(getDoc(doc(unauth.firestore(), 'homepageSections/s1')))
+  })
+
+  it('row 17: unauthenticated write is DENIED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertFails(setDoc(doc(unauth.firestore(), 'homepageSections/s1'), { title: 'x' }))
+  })
+
+  it('row 18: authenticated write is ALLOWED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertSucceeds(setDoc(doc(userA.firestore(), 'homepageSections/s1'), { title: 'x' }))
+  })
+})
+
+describe('Storage: section media and videos', () => {
+  it('row 19: unauthenticated read of section-media is ALLOWED', async () => {
+    const admin = testEnv.authenticatedContext('userA')
+    await uploadBytes(ref(admin.storage(), 'section-media/hero.jpg'), new Uint8Array([1, 2, 3]), {
+      contentType: 'image/jpeg',
+    })
+    const unauth = testEnv.unauthenticatedContext()
+    await assertSucceeds(getBytes(ref(unauth.storage(), 'section-media/hero.jpg')))
+  })
+
+  it('row 20: unauthenticated write of section-media is DENIED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertFails(
+      uploadBytes(ref(unauth.storage(), 'section-media/hero.jpg'), new Uint8Array([1, 2, 3]), {
+        contentType: 'image/jpeg',
+      }),
+    )
+  })
+
+  it('row 21: authenticated write of a small section image is ALLOWED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertSucceeds(
+      uploadBytes(ref(userA.storage(), 'section-media/hero.jpg'), new Uint8Array([1, 2, 3]), {
+        contentType: 'image/jpeg',
+      }),
+    )
+  })
+
+  it('row 22: authenticated write of a video is ALLOWED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertSucceeds(
+      uploadBytes(ref(userA.storage(), 'section-videos/clip.mp4'), new Uint8Array([1, 2, 3]), {
+        contentType: 'video/mp4',
+      }),
+    )
+  })
+
+  it('row 23: authenticated write of a non-video to section-videos is DENIED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertFails(
+      uploadBytes(ref(userA.storage(), 'section-videos/clip.jpg'), new Uint8Array([1, 2, 3]), {
+        contentType: 'image/jpeg',
+      }),
+    )
+  })
+
+  it('row 24: unauthenticated write of section-videos is DENIED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertFails(
+      uploadBytes(ref(unauth.storage(), 'section-videos/clip.mp4'), new Uint8Array([1, 2, 3]), {
+        contentType: 'video/mp4',
+      }),
+    )
+  })
+})
+
+describe('Firestore: homepageConfig', () => {
+  it('row 25: unauthenticated read is ALLOWED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertSucceeds(getDoc(doc(unauth.firestore(), 'homepageConfig/defaultLayout')))
+  })
+
+  it('row 26: unauthenticated write is DENIED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertFails(setDoc(doc(unauth.firestore(), 'homepageConfig/defaultLayout'), { sections: [] }))
+  })
+
+  it('row 27: authenticated write is ALLOWED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertSucceeds(setDoc(doc(userA.firestore(), 'homepageConfig/defaultLayout'), { sections: [] }))
+  })
+})
+
 describe('contract coverage', () => {
-  it('documents 15 rows in the security-rules contract', () => {
+  it('documents 27 rows in the security-rules contract', () => {
     const contract = readFileSync(
       resolve(__dirname, '../../../specs/001-amore-jewelry-catalogue/contracts/security-rules.md'),
       'utf8',
     )
-    // web/tests/rules -> web/tests -> web -> repo root -> specs/...
     const rows = contract.match(/^\| \d+ \|/gm) ?? []
-    expect(rows).toHaveLength(15)
+    expect(rows).toHaveLength(27)
   })
 })

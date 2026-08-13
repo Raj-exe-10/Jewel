@@ -4,41 +4,16 @@ import Autoplay from 'embla-carousel-autoplay'
 import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
-import { HERO_IMAGES } from '../../data/storefrontMedia'
+import { defaultSectionByAnchor } from '../../data/defaultSections'
+import type { HeroBannerContent, HomepageSection } from '../../types/homepage'
+
+const props = defineProps<{ section?: HomepageSection }>()
 
 const nav = useCatalogueNav()
+const resolved = computed(() => props.section ?? defaultSectionByAnchor('hero'))
+const slides = computed(() => (resolved.value.content as HeroBannerContent).slides ?? [])
+const slideCount = computed(() => slides.value.length)
 
-const slides = [
-  {
-    id: 'bridal',
-    image: HERO_IMAGES.bridal,
-    eyebrow: 'New Season',
-    heading: 'Discover the Bridal Edit',
-    subheading: 'Kundan, polki, and antique pieces made to be heirlooms.',
-    ctaLabel: 'Shop Bridal',
-    action: () => nav.filterByBridal(),
-  },
-  {
-    id: 'new-arrivals',
-    image: HERO_IMAGES.newArrivals,
-    eyebrow: 'Just In',
-    heading: 'New Arrivals, Handcrafted with Love',
-    subheading: 'Everyday pieces that go from desk to dinner.',
-    ctaLabel: 'Shop New Arrivals',
-    action: () => nav.scrollToSection('shop-the-visuals'),
-  },
-  {
-    id: 'signature',
-    image: HERO_IMAGES.signature,
-    eyebrow: "Founder's Picks",
-    heading: 'Signature Pieces, Made to Be Loved',
-    subheading: 'Our most-requested designs, curated by the Amore team.',
-    ctaLabel: 'Shop Signature Picks',
-    action: () => nav.scrollToSection('founders-favourites'),
-  },
-]
-
-const slideCount = computed(() => slides.length)
 const { emblaRef, selectedIndex, scrollSnaps, scrollPrev, scrollNext, scrollTo } = useCarousel(
   { loop: true },
   [Autoplay({ delay: 5500, stopOnInteraction: false })],
@@ -48,12 +23,12 @@ void emblaRef
 </script>
 
 <template>
-  <section data-testid="hero-banner" class="relative overflow-hidden">
+  <section :id="resolved.anchorId" data-testid="hero-banner" class="relative overflow-hidden">
     <div ref="emblaRef" class="overflow-hidden">
       <div class="flex">
         <div v-for="slide in slides" :key="slide.id" data-testid="hero-banner-slide" class="relative min-w-0 flex-[0_0_100%]">
           <div class="relative h-[60vh] min-h-[420px] w-full sm:h-[70vh]">
-            <img :src="slide.image" :alt="slide.heading" class="absolute inset-0 h-full w-full object-cover" />
+            <img :src="slide.imageUrl" :alt="slide.heading" class="absolute inset-0 h-full w-full object-cover" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             <div class="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-6 pb-14 text-center text-white">
               <p class="text-xs uppercase tracking-[0.3em] text-amore-cream">{{ slide.eyebrow }}</p>
@@ -63,7 +38,7 @@ void emblaRef
                 type="button"
                 data-testid="hero-banner-cta"
                 class="mt-2 rounded-full bg-white px-6 py-2.5 text-sm font-medium tracking-wide text-amore-charcoal transition hover:bg-amore-cream"
-                @click="slide.action"
+                @click="nav.runCta(slide.ctaTarget)"
               >
                 {{ slide.ctaLabel }}
               </button>

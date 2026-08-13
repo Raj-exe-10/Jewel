@@ -39,8 +39,8 @@ npm run emulators
 ```
 
 Terminal 2 — seed placeholder categories/collections/style tags, 20 mock
-products, and 3 staff accounts (`owner@amore.test` / `staff1@amore.test` /
-`staff2@amore.test`, all with password `password123`):
+products, default homepage sections, and 3 staff accounts (`owner@amore.test` /
+`staff1@amore.test` / `staff2@amore.test`, all with password `password123`):
 
 ```bash
 npm run seed:emulator
@@ -53,8 +53,8 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` for the public storefront and
-`http://localhost:5173/admin/login` for the manager panel. The Emulator UI is
-at `http://127.0.0.1:4000`.
+`http://localhost:5173/admin/login` for the manager panel (Homepage, Products,
+Taxonomies). The Emulator UI is at `http://127.0.0.1:4000`.
 
 ## Testing (TDD: red → green → refactor for every change)
 
@@ -79,9 +79,9 @@ npm run test && npm run test:rules && npm run test:e2e
 web/
 ├── src/
 │   ├── components/public/   # Storefront sections (nav dropdowns, hero carousels, catalogue, footer, etc.)
-│   ├── components/admin/    # Manager panel (product form, photo uploader, category manager)
-│   ├── views/                # PublicHome.vue, admin/AdminLogin.vue, admin/AdminProductList.vue
-│   ├── stores/                # Pinia stores: auth, catalogue, wishlist
+│   ├── components/admin/    # Manager panel (homepage sections, product form, photo/video uploaders)
+│   ├── views/                # PublicHome.vue, admin/AdminLogin.vue, admin/AdminHomepage.vue, admin/AdminProductList.vue, admin/AdminTaxonomies.vue
+│   ├── stores/                # Pinia stores: auth, catalogue, homepage, wishlist
 │   ├── composables/           # useWhatsAppLink, useImageCompression
 │   ├── router/                 # Route table + auth guard
 │   └── firebase/                # Firebase app/emulator initialization
@@ -112,8 +112,8 @@ web/
    - Build command: `npm run build`
    - Publish/output directory: `dist`
    - Set the environment variables from step 5 in the hosting dashboard.
-7. Add real product photos/categories through `/admin/login` once deployed —
-   the seed script is for local development only.
+7. Add real product photos/categories and homepage sections through `/admin/login`
+   once deployed — the seed script is for local development only.
 8. Regenerate app icons if you change the brand mark: replace
    `icon-source/master.png` and run `node scripts/generate-icons.mjs`.
 

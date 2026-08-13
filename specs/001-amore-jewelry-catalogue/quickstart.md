@@ -66,7 +66,8 @@ npm run dev
    with a seeded emulator test account, add a product with a placeholder
    photo, and confirm it appears both in the admin product list and — within
    a few seconds — on the public `/` page in another browser tab pointed at
-   the same emulator/project data.
+   the same emulator/project data. Use **Homepage** to add, hide, reorder, or
+   edit storefront sections (including Shop the Visuals videos).
 4. **Install as an app (User Story 4)**: run a production build
    (`npm run build && npm run preview`), open it on a mobile device/emulator,
    and use "Add to Home Screen"; confirm the resulting shortcut opens

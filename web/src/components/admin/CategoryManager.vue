@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { normalizeTaxonomyName } from '../../lib/taxonomyDuplicates'
 
 const props = defineProps<{
   items: Array<{ id: string; name: string }>
@@ -10,10 +11,17 @@ const emit = defineEmits<{ add: [name: string]; remove: [id: string] }>()
 
 const newName = ref('')
 const blockedId = ref<string | null>(null)
+const duplicateWarning = ref<string | null>(null)
 
 function addItem() {
   const name = newName.value.trim()
   if (!name) return
+  const normalized = normalizeTaxonomyName(name)
+  if (props.items.some((item) => normalizeTaxonomyName(item.name) === normalized)) {
+    duplicateWarning.value = `A ${props.label.toLowerCase()} named “${name}” already exists.`
+    return
+  }
+  duplicateWarning.value = null
   emit('add', name)
   newName.value = ''
 }
@@ -51,6 +59,9 @@ function removeItem(id: string) {
 
     <p v-if="blockedId" data-testid="reference-warning" class="mb-3 text-sm text-amber-700">
       This {{ label.toLowerCase() }} is still used by one or more products and can't be removed yet.
+    </p>
+    <p v-if="duplicateWarning" data-testid="duplicate-warning" class="mb-3 text-sm text-amber-700">
+      {{ duplicateWarning }}
     </p>
 
     <div class="flex gap-2">

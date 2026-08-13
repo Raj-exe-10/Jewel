@@ -1,26 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
+import { defaultSectionByAnchor } from '../../data/defaultSections'
 import { jewelryImageFor } from '../../data/storefrontMedia'
 import { useCatalogueStore } from '../../stores/catalogue'
+import type { HomepageSection, TaxonomyTilesContent } from '../../types/homepage'
 import SectionHeading from './SectionHeading.vue'
+
+const props = defineProps<{ section?: HomepageSection }>()
 
 const catalogue = useCatalogueStore()
 const nav = useCatalogueNav()
+const resolved = computed(() => props.section ?? defaultSectionByAnchor('shop-by-categories'))
+const overrides = computed(() => (resolved.value.content as TaxonomyTilesContent).tileImageOverrides ?? {})
 
 const tiles = computed(() =>
   catalogue.categories.map((category, index) => ({
     id: category.id,
     name: category.name,
-    image: jewelryImageFor(category.name, index),
+    image: overrides.value[category.id] ?? jewelryImageFor(category.name, index),
   })),
 )
 </script>
 
 <template>
-  <section v-if="tiles.length > 0" class="mx-auto max-w-6xl px-4 py-14">
+  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 py-14">
     <div class="relative mb-2">
-      <SectionHeading title="Shop by Categories" subtitle="Browse every silhouette in the Amore atelier" icon="◈" />
+      <SectionHeading :title="resolved.title" :subtitle="resolved.subtitle" :icon="resolved.icon" />
       <button
         type="button"
         data-testid="shop-categories-view-all"

@@ -2,14 +2,18 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
+import { defaultSectionByAnchor } from '../../data/defaultSections'
+import { productsForSection } from '../../lib/sectionProducts'
 import { useCatalogueStore } from '../../stores/catalogue'
+import type { HomepageSection } from '../../types/homepage'
 import ProductCard from './ProductCard.vue'
 import SectionHeading from './SectionHeading.vue'
 
-defineProps<{ businessPhoneE164: string }>()
+const props = defineProps<{ businessPhoneE164: string; section?: HomepageSection }>()
 
 const catalogue = useCatalogueStore()
-const favourites = computed(() => catalogue.products.filter((p) => p.isFounderFavourite))
+const resolved = computed(() => props.section ?? defaultSectionByAnchor('founders-favourites'))
+const favourites = computed(() => productsForSection(resolved.value, catalogue.products))
 const slideCount = computed(() => favourites.value.length)
 
 function categoryNameFor(categoryId: string): string {
@@ -25,12 +29,12 @@ void emblaRef
 </script>
 
 <template>
-  <section v-if="favourites.length > 0" id="founders-favourites" class="mx-auto max-w-6xl px-4 py-14">
+  <section v-if="favourites.length > 0" :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 py-14">
     <div class="relative mb-2">
       <SectionHeading
-        title="Founder's Favourites"
-        subtitle="Signature pieces our atelier returns to again and again"
-        icon="◇"
+        :title="resolved.title"
+        :subtitle="resolved.subtitle"
+        :icon="resolved.icon"
       />
       <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
         <button

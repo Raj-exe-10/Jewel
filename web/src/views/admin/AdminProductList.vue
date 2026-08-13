@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import AdminLayout from '../../components/admin/AdminLayout.vue'
-import CategoryManager from '../../components/admin/CategoryManager.vue'
 import ConfirmDeleteDialog from '../../components/admin/ConfirmDeleteDialog.vue'
 import ProductForm from '../../components/admin/ProductForm.vue'
 import { useCatalogueStore } from '../../stores/catalogue'
@@ -12,32 +11,11 @@ const catalogue = useCatalogueStore()
 const isFormOpen = ref(false)
 const editingProduct = ref<Product | null>(null)
 const pendingDelete = ref<Product | null>(null)
-const taxonomyError = ref<string | null>(null)
 const deleteError = ref<string | null>(null)
 
 onMounted(() => {
   catalogue.subscribeToCatalogue()
 })
-
-type TaxonomyName = 'categories' | 'collections' | 'styleTags'
-
-async function addTaxonomy(taxonomy: TaxonomyName, name: string) {
-  taxonomyError.value = null
-  try {
-    await catalogue.addTaxonomyEntry(taxonomy, name)
-  } catch {
-    taxonomyError.value = 'Could not add that. Please check your connection and try again.'
-  }
-}
-
-async function removeTaxonomy(taxonomy: TaxonomyName, id: string) {
-  taxonomyError.value = null
-  try {
-    await catalogue.removeTaxonomyEntry(taxonomy, id)
-  } catch {
-    taxonomyError.value = "That can't be removed right now. Please refresh and try again."
-  }
-}
 
 function openCreateForm() {
   editingProduct.value = null
@@ -84,9 +62,28 @@ async function confirmDelete() {
       </button>
     </div>
 
-    <div v-if="isFormOpen" class="mb-8 rounded-lg border border-neutral-200 bg-white p-6">
-      <h2 class="mb-4 font-medium">{{ editingProduct ? 'Edit Product' : 'New Product' }}</h2>
-      <ProductForm :editing="editingProduct" @saved="onSaved" />
+    <div
+      v-if="isFormOpen"
+      data-testid="product-form-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Product form"
+    >
+      <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h2 class="font-medium">{{ editingProduct ? 'Edit Product' : 'New Product' }}</h2>
+          <button
+            type="button"
+            data-testid="close-product-form"
+            class="rounded-md border border-neutral-300 px-3 py-1.5 text-sm"
+            @click="onSaved"
+          >
+            Close
+          </button>
+        </div>
+        <ProductForm :key="editingProduct?.id ?? 'new'" :editing="editingProduct" @saved="onSaved" />
+      </div>
     </div>
 
     <ul data-testid="product-list" class="mb-12 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
@@ -128,31 +125,6 @@ async function confirmDelete() {
       </li>
     </ul>
     <p v-if="deleteError" class="-mt-8 mb-8 text-sm text-red-600">{{ deleteError }}</p>
-
-    <p v-if="taxonomyError" class="mb-4 text-sm text-red-600">{{ taxonomyError }}</p>
-    <section class="grid gap-6 sm:grid-cols-3">
-      <CategoryManager
-        :items="catalogue.categories"
-        label="Category"
-        :is-referenced="(id) => catalogue.isTaxonomyReferenced('categories', id)"
-        @add="(name) => addTaxonomy('categories', name)"
-        @remove="(id) => removeTaxonomy('categories', id)"
-      />
-      <CategoryManager
-        :items="catalogue.collections"
-        label="Collection"
-        :is-referenced="(id) => catalogue.isTaxonomyReferenced('collections', id)"
-        @add="(name) => addTaxonomy('collections', name)"
-        @remove="(id) => removeTaxonomy('collections', id)"
-      />
-      <CategoryManager
-        :items="catalogue.styleTags"
-        label="Style Tag"
-        :is-referenced="(id) => catalogue.isTaxonomyReferenced('styleTags', id)"
-        @add="(name) => addTaxonomy('styleTags', name)"
-        @remove="(id) => removeTaxonomy('styleTags', id)"
-      />
-    </section>
 
     <ConfirmDeleteDialog
       :open="pendingDelete !== null"

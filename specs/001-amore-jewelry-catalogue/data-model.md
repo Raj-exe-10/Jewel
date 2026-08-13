@@ -70,6 +70,33 @@ Collection: `styleTags/{styleTagId}`
 
 Same deletion-guard rule applies for `products.styleTagIds` (array-contains check).
 
+## Homepage Section
+
+Collection: `homepageSections/{sectionId}`
+
+Staff-managed storefront layout. Public visitors read visible sections; only
+authenticated staff can create, update, hide, reorder, or delete them.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `type` | string | yes | One of: `hero_banner`, `video_carousel`, `product_carousel`, `style_tiles`, `category_grid`, `collection_tiles`, `catalogue_grid`, `about`, `instagram_gallery`, `studio_location`, `contact` |
+| `title` | string | yes | Section heading shown on the storefront |
+| `subtitle` | string | no | |
+| `icon` | string | no | Decorative glyph for `SectionHeading` |
+| `anchorId` | string | yes | DOM id used by nav scroll (e.g. `founders-favourites`) |
+| `sortOrder` | number | yes | Lower numbers render first |
+| `isVisible` | boolean | yes | Hidden sections stay in admin but are omitted from `/` |
+| `productSelectionMode` | `"flag" \| "manual"` | no | Product carousels only |
+| `productFlag` | `"isFounderFavourite" \| "isBridal" \| "isNewArrival" \| "isStatementPick"` | no | Used when mode is `flag` |
+| `productIds` | string[] | no | Used when mode is `manual`; order is display order |
+| `content` | map | yes | Type-specific payload (hero slides, videos, about copy, tile image overrides, etc.) |
+| `createdAt` / `updatedAt` | number | yes | |
+| `updatedBy` | string (uid) | yes | |
+
+**Video carousel content** (`type: video_carousel`): `videos[]` with `label`, `posterUrl`, `videoUrl`, `sortOrder`. Files live in Storage at `section-videos/{sectionId}/**` (public read, staff write, video/*, <= 50MB).
+
+**Hero / about / tile images**: Storage `section-media/**` (public read, staff write, image/*, <= 5MB).
+
 ## Staff Account
 
 Not a Firestore document — modeled entirely as a Firebase Authentication
@@ -98,10 +125,11 @@ erDiagram
     PRODUCT }o--o| COLLECTION : "collectionId"
     PRODUCT }o--o{ STYLE_TAG : "styleTagIds"
     PRODUCT }o--|| STAFF_ACCOUNT : "createdBy/updatedBy (uid)"
+    HOMEPAGE_SECTION }o--o{ PRODUCT : "productIds or productFlag"
 ```
 
 ## Security Rules summary (see contracts/security-rules.md for full rule text)
 
-- `products`, `categories`, `collections`, `styleTags`: `allow read: if true;` and `allow write: if request.auth != null;` — public read, authenticated-only write, identical for all 3 accounts (no role-based branching), per FR-029 and Constitution Principle V.
+- `products`, `categories`, `collections`, `styleTags`, `homepageSections`: `allow read: if true;` and `allow write: if request.auth != null;` — public read, authenticated-only write, identical for all 3 accounts (no role-based branching), per FR-029 and Constitution Principle V.
 - `staff/{uid}` (if used): `allow read: if request.auth != null;` (internal use only, never rendered publicly); `allow write: if request.auth != null && request.auth.uid == uid;` (a user may only maintain their own display document).
 - Firebase Storage `product-photos/**`: `allow read;` public, `allow write: if request.auth != null;` authenticated-only, with a content-type/size check (image/*, <= 5MB post-compression) enforced in rules as defense-in-depth alongside client-side compression.

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useCatalogueStore } from '../../stores/catalogue'
-import type { Product, ProductInput } from '../../types/catalogue'
+import type { Product, ProductInput, StyleGroup } from '../../types/catalogue'
 import PhotoUploader from './PhotoUploader.vue'
 
 const props = defineProps<{ editing?: Product | null }>()
@@ -13,11 +13,15 @@ const name = ref(props.editing?.name ?? '')
 const description = ref(props.editing?.description ?? '')
 const price = ref(props.editing?.priceInr ?? 0)
 const categoryId = ref(props.editing?.categoryId ?? catalogue.categories[0]?.id ?? '')
+const collectionId = ref(props.editing?.collectionId ?? '')
+const styleTagIds = ref<string[]>([...(props.editing?.styleTagIds ?? [])])
 const photoUrls = ref<string[]>(props.editing?.photoUrls ?? [])
+const isNewArrival = ref(props.editing?.isNewArrival ?? false)
+const isFounderFavourite = ref(props.editing?.isFounderFavourite ?? false)
+const isStatementPick = ref(props.editing?.isStatementPick ?? false)
+const isBridal = ref(props.editing?.isBridal ?? false)
+const styleGroup = ref<StyleGroup | ''>(props.editing?.styleGroup ?? '')
 
-// Categories can still be loading (async Firestore snapshot) when the form
-// first mounts; default to the first one once they arrive, unless the user
-// (or edit mode) already set a value.
 watch(
   () => catalogue.categories,
   (categories) => {
@@ -29,10 +33,15 @@ watch(
 )
 const formError = ref<string | null>(null)
 const isSaving = ref(false)
-// Categories load asynchronously from Firestore; block saving until they've
-// arrived so the form can never be submitted with a category picker that
-// looks filled-in visually but hasn't actually settled yet.
 const categoriesReady = computed(() => catalogue.categories.length > 0)
+
+function toggleStyleTag(id: string) {
+  if (styleTagIds.value.includes(id)) {
+    styleTagIds.value = styleTagIds.value.filter((tagId) => tagId !== id)
+    return
+  }
+  styleTagIds.value = [...styleTagIds.value, id]
+}
 
 function validate(): string | null {
   if (!name.value.trim()) return 'Please enter a product name.'
@@ -58,13 +67,13 @@ async function onSubmit() {
       priceInr: Number(price.value),
       photoUrls: photoUrls.value,
       categoryId: categoryId.value,
-      styleTagIds: props.editing?.styleTagIds ?? [],
-      collectionId: props.editing?.collectionId ?? null,
-      isNewArrival: props.editing?.isNewArrival ?? false,
-      isFounderFavourite: props.editing?.isFounderFavourite ?? false,
-      isStatementPick: props.editing?.isStatementPick ?? false,
-      isBridal: props.editing?.isBridal ?? false,
-      styleGroup: props.editing?.styleGroup ?? null,
+      styleTagIds: styleTagIds.value,
+      collectionId: collectionId.value || null,
+      isNewArrival: isNewArrival.value,
+      isFounderFavourite: isFounderFavourite.value,
+      isStatementPick: isStatementPick.value,
+      isBridal: isBridal.value,
+      styleGroup: styleGroup.value || null,
     }
     await catalogue.saveProduct(input, props.editing?.id)
     emit('saved')
@@ -120,6 +129,62 @@ async function onSubmit() {
         </option>
       </select>
       <p v-if="!categoriesReady" class="mt-1 text-xs text-neutral-500">Loading categories…</p>
+    </label>
+
+    <label class="block text-sm">
+      <span class="mb-1 block text-neutral-700">Collection</span>
+      <select v-model="collectionId" data-testid="product-collection" class="w-full rounded-md border border-neutral-300 px-3 py-2">
+        <option value="">None</option>
+        <option v-for="collection in catalogue.collections" :key="collection.id" :value="collection.id">
+          {{ collection.name }}
+        </option>
+      </select>
+    </label>
+
+    <fieldset class="text-sm">
+      <legend class="mb-1 text-neutral-700">Style tags</legend>
+      <div class="flex flex-wrap gap-3">
+        <label v-for="tag in catalogue.styleTags" :key="tag.id" class="inline-flex items-center gap-2">
+          <input
+            type="checkbox"
+            :checked="styleTagIds.includes(tag.id)"
+            :data-testid="`product-style-${tag.id}`"
+            @change="toggleStyleTag(tag.id)"
+          />
+          {{ tag.name }}
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="text-sm">
+      <legend class="mb-1 text-neutral-700">Curated sections</legend>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <label class="inline-flex items-center gap-2">
+          <input v-model="isFounderFavourite" type="checkbox" data-testid="flag-founder" />
+          Founder's Favourite
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input v-model="isNewArrival" type="checkbox" data-testid="flag-new-arrival" />
+          New Arrival
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input v-model="isStatementPick" type="checkbox" data-testid="flag-statement" />
+          Statement Pick
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input v-model="isBridal" type="checkbox" data-testid="flag-bridal" />
+          Bridal
+        </label>
+      </div>
+    </fieldset>
+
+    <label class="block text-sm">
+      <span class="mb-1 block text-neutral-700">Style group</span>
+      <select v-model="styleGroup" data-testid="product-style-group" class="w-full rounded-md border border-neutral-300 px-3 py-2">
+        <option value="">None</option>
+        <option value="traditional">Traditional</option>
+        <option value="modern">Modern</option>
+      </select>
     </label>
 
     <div>

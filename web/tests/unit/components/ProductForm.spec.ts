@@ -88,5 +88,23 @@ describe('ProductForm', () => {
     await wrapper.get('form').trigger('submit.prevent')
 
     expect(addDocMock).toHaveBeenCalledTimes(1)
+    const payload = addDocMock.mock.calls[0][1] as { isFounderFavourite: boolean; isBridal: boolean }
+    expect(payload.isFounderFavourite).toBe(false)
+    expect(payload.isBridal).toBe(false)
+  })
+
+  it('saves curated-section flags when they are checked', async () => {
+    const { wrapper } = mountForm()
+    await wrapper.get('[data-testid="product-name"]').setValue('Test Product')
+    await wrapper.get('[data-testid="product-description"]').setValue('desc')
+    await wrapper.get('[data-testid="product-price"]').setValue(1000)
+    await wrapper.findComponent(PhotoUploaderStub).vm.$emit('update:modelValue', ['https://example.com/a.jpg'])
+    await wrapper.get('[data-testid="flag-founder"]').setValue(true)
+    await wrapper.get('[data-testid="flag-bridal"]').setValue(true)
+    await wrapper.get('form').trigger('submit.prevent')
+
+    const payload = addDocMock.mock.calls[0][1] as { isFounderFavourite: boolean; isBridal: boolean }
+    expect(payload.isFounderFavourite).toBe(true)
+    expect(payload.isBridal).toBe(true)
   })
 })
