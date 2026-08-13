@@ -28,3 +28,21 @@ pubsub-debug.log
 coverage/
 playwright-report/
 test-results/
+# Graphify machine state / caches (not portable across clones)
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_labels.json
+graphify-out/cost.json
+graphify-out/manifest.json
+graphify-out/cache/
+graphify-out/<graphify>/
+graphify-out/reflections/
+graphify-out/LESSONS.md
+
+# Any graphify scratch dir nested under scanned subfolders (e.g. web/graphify-out/ast|semantic|stat-index caches)
+**/graphify-out/cache/
+
+# Keep the graph outputs:
+# !graphify-out/graph.json
+# !graphify-out/graph.html
+# !graphify-out/GRAPH_REPORT.md
