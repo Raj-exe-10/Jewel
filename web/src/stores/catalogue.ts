@@ -43,7 +43,15 @@ export const useCatalogueStore = defineStore('catalogue', {
         if (state.filters.styleTagId && !product.styleTagIds.includes(state.filters.styleTagId)) return false
         if (state.filters.isBridal !== null && product.isBridal !== state.filters.isBridal) return false
         if (term) {
-          const haystack = `${product.name} ${product.description}`.toLowerCase()
+          const categoryName =
+            state.categories.find((c) => c.id === product.categoryId)?.name.toLowerCase() ?? ''
+          const collectionName =
+            state.collections.find((c) => c.id === product.collectionId)?.name.toLowerCase() ?? ''
+          const styleNames = product.styleTagIds
+            .map((id) => state.styleTags.find((t) => t.id === id)?.name.toLowerCase() ?? '')
+            .join(' ')
+          const haystack =
+            `${product.name} ${product.description} ${categoryName} ${collectionName} ${styleNames}`.toLowerCase()
           if (!haystack.includes(term)) return false
         }
         return true

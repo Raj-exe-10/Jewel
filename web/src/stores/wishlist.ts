@@ -33,5 +33,9 @@ export const useWishlistStore = defineStore('wishlist', {
         : [...this.productIds, productId]
       writeToStorage(this.productIds)
     },
+    clear() {
+      this.productIds = []
+      writeToStorage(this.productIds)
+    },
   },
 })

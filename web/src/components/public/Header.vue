@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { Bars3Icon, HeartIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
 import { buildGeneralEnquiryLink } from '../../composables/useWhatsAppLink'
@@ -8,6 +8,8 @@ import { useWishlistStore } from '../../stores/wishlist'
 import NavDropdown from './NavDropdown.vue'
 import PromoBar from './PromoBar.vue'
 import SearchOverlay from './SearchOverlay.vue'
+import WishlistDrawer from './WishlistDrawer.vue'
+import WhatsAppIcon from './WhatsAppIcon.vue'
 
 const props = defineProps<{ businessPhoneE164: string }>()
 
@@ -16,6 +18,7 @@ const wishlist = useWishlistStore()
 const nav = useCatalogueNav()
 
 const isSearchOpen = ref(false)
+const isWishlistOpen = ref(false)
 const isMobileMenuOpen = ref(false)
 
 const whatsAppLink = computed(() => buildGeneralEnquiryLink(props.businessPhoneE164))
@@ -45,13 +48,24 @@ function goToBridal() {
 function closeMobileMenu() {
   isMobileMenuOpen.value = false
 }
+
+async function openSearch() {
+  isSearchOpen.value = true
+  isWishlistOpen.value = false
+  await nextTick()
+}
+
+function openWishlist() {
+  isWishlistOpen.value = true
+  isSearchOpen.value = false
+}
 </script>
 
 <template>
   <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur">
     <PromoBar />
 
-    <div class="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
+    <div class="relative mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
       <button
         type="button"
         data-testid="mobile-menu-toggle"
@@ -62,7 +76,16 @@ function closeMobileMenu() {
         <component :is="isMobileMenuOpen ? XMarkIcon : Bars3Icon" class="h-6 w-6" />
       </button>
 
-      <nav class="hidden items-center gap-6 sm:flex">
+      <a
+        href="#"
+        data-testid="brand-logo"
+        class="font-display shrink-0 text-2xl font-bold tracking-wide text-amore-gold drop-shadow-sm sm:text-3xl"
+        @click.prevent="scrollToTop"
+      >
+        <h1 class="inline">Amore</h1>
+      </a>
+
+      <nav class="hidden flex-1 items-center justify-center gap-5 lg:gap-6 sm:flex">
         <button
           type="button"
           data-testid="nav-new-arrivals"
@@ -92,30 +115,22 @@ function closeMobileMenu() {
         </button>
       </nav>
 
-      <a
-        href="#"
-        data-testid="brand-logo"
-        class="font-display text-2xl tracking-wide text-neutral-900"
-        @click.prevent="scrollToTop"
-      >
-        <h1 class="inline">Amore</h1>
-      </a>
-
-      <div class="flex items-center gap-2 sm:gap-4">
+      <div class="ml-auto flex items-center gap-2 sm:gap-3">
         <button
           type="button"
           data-testid="search-toggle"
           aria-label="Search"
           class="rounded-full p-2 text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
-          @click="isSearchOpen = !isSearchOpen"
+          @click="openSearch"
         >
           <MagnifyingGlassIcon class="h-5 w-5" />
         </button>
-        <a
-          href="#catalogue"
+        <button
+          type="button"
           data-testid="wishlist-link"
           aria-label="Wishlist"
           class="relative rounded-full p-2 text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
+          @click="openWishlist"
         >
           <HeartIcon class="h-5 w-5" />
           <span
@@ -125,14 +140,15 @@ function closeMobileMenu() {
           >
             {{ wishlist.productIds.length }}
           </span>
-        </a>
+        </button>
         <a
           :href="whatsAppLink"
           target="_blank"
           rel="noopener noreferrer"
           data-testid="header-whatsapp-cta"
-          class="hidden items-center gap-1.5 rounded-full bg-amore-charcoal px-4 py-2 text-xs font-medium tracking-wide text-white transition hover:bg-black sm:inline-flex"
+          class="hidden items-center gap-1.5 rounded-full bg-whatsapp px-4 py-2 text-xs font-medium tracking-wide text-white transition hover:bg-whatsapp-dark sm:inline-flex"
         >
+          <WhatsAppIcon size-class="h-3.5 w-3.5" />
           Enquire on WhatsApp
         </a>
       </div>
@@ -155,5 +171,11 @@ function closeMobileMenu() {
         <a href="#contact" class="text-left" @click="closeMobileMenu">Contact</a>
       </nav>
     </div>
+
+    <WishlistDrawer
+      :open="isWishlistOpen"
+      :business-phone-e164="businessPhoneE164"
+      @close="isWishlistOpen = false"
+    />
   </header>
 </template>

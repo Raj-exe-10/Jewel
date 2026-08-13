@@ -1,13 +1,17 @@
-import { watch, ref } from 'vue'
-import emblaCarouselVue from 'embla-carousel-vue'
-import type { EmblaOptionsType, EmblaPluginType } from 'embla-carousel'
+import { nextTick, onUnmounted, shallowRef, watch, ref, type Ref } from 'vue'
+import EmblaCarousel, { type EmblaCarouselType, type EmblaOptionsType, type EmblaPluginType } from 'embla-carousel'
 
 /**
- * Thin wrapper around embla-carousel-vue exposing the bits our sections need:
- * a template ref for the viewport, prev/next controls, and dot-nav state.
+ * Direct Embla wrapper (bypassing embla-carousel-vue's mount timing) so
+ * arrow buttons work even when slides arrive asynchronously after mount.
  */
-export function useCarousel(options: EmblaOptionsType = {}, plugins: EmblaPluginType[] = []) {
-  const [emblaRef, emblaApi] = emblaCarouselVue(options, plugins)
+export function useCarousel(
+  options: EmblaOptionsType = {},
+  plugins: EmblaPluginType[] = [],
+  slideCount?: Ref<number>,
+) {
+  const emblaRef = ref<HTMLElement | null>(null)
+  const emblaApi = shallowRef<EmblaCarouselType | undefined>(undefined)
   const canScrollPrev = ref(false)
   const canScrollNext = ref(false)
   const selectedIndex = ref(0)
@@ -22,12 +26,42 @@ export function useCarousel(options: EmblaOptionsType = {}, plugins: EmblaPlugin
     scrollSnaps.value = api.scrollSnapList()
   }
 
-  watch(emblaApi, (api) => {
-    if (!api) return
-    syncState()
+  function destroy() {
+    emblaApi.value?.destroy()
+    emblaApi.value = undefined
+  }
+
+  async function init() {
+    await nextTick()
+    const node = emblaRef.value
+    if (!node) return
+
+    if (emblaApi.value) {
+      emblaApi.value.reInit(options, plugins)
+      syncState()
+      return
+    }
+
+    const api = EmblaCarousel(node, options, plugins)
+    emblaApi.value = api
     api.on('select', syncState)
     api.on('reInit', syncState)
+    api.on('settle', syncState)
+    syncState()
+  }
+
+  watch(emblaRef, (node) => {
+    if (node) void init()
+    else destroy()
   })
+
+  if (slideCount) {
+    watch(slideCount, () => {
+      void init()
+    })
+  }
+
+  onUnmounted(destroy)
 
   function scrollPrev() {
     emblaApi.value?.scrollPrev()

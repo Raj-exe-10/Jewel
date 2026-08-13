@@ -1,31 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
+import { jewelryImageFor } from '../../data/storefrontMedia'
 import { useCatalogueStore } from '../../stores/catalogue'
+import SectionHeading from './SectionHeading.vue'
 
 const catalogue = useCatalogueStore()
 const nav = useCatalogueNav()
 
 const tiles = computed(() =>
-  catalogue.categories.map((category) => {
-    const match = catalogue.products.find((p) => p.categoryId === category.id)
-    return {
-      id: category.id,
-      name: category.name,
-      image: match?.photoUrls[0] ?? `https://picsum.photos/seed/amore-category-${category.id}/400/400`,
-    }
-  }),
+  catalogue.categories.map((category, index) => ({
+    id: category.id,
+    name: category.name,
+    image: jewelryImageFor(category.name, index),
+  })),
 )
 </script>
 
 <template>
   <section v-if="tiles.length > 0" class="mx-auto max-w-6xl px-4 py-14">
-    <div class="mb-6 flex items-center justify-between">
-      <h2 class="font-display text-2xl">Shop by Categories</h2>
+    <div class="relative mb-2">
+      <SectionHeading title="Shop by Categories" subtitle="Browse every silhouette in the Amore atelier" icon="◈" />
       <button
         type="button"
         data-testid="shop-categories-view-all"
-        class="text-sm font-medium text-amore-charcoal underline-offset-4 hover:underline"
+        class="absolute right-0 top-1/2 hidden -translate-y-1/2 text-sm font-medium text-amore-gold underline-offset-4 hover:underline sm:block"
         @click="nav.clearAndScrollToCatalogue"
       >
         View All

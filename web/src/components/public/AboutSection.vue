@@ -2,7 +2,7 @@
   <section id="about" class="mx-auto max-w-6xl px-4 py-16">
     <div class="grid items-center gap-10 sm:grid-cols-2">
       <img
-        src="https://picsum.photos/seed/amore-founder/700/800"
+        src="https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=700&h=800&q=80"
         alt="The Amore founder at work in the studio"
         class="aspect-[4/5] w-full rounded-2xl object-cover"
       />

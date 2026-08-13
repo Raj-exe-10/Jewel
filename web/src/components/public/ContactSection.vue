@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { buildGeneralEnquiryLink, buildInstagramProfileLink } from '../../composables/useWhatsAppLink'
+import WhatsAppIcon from './WhatsAppIcon.vue'
 
 const props = defineProps<{ businessPhoneE164: string; instagramHandle: string }>()
 
@@ -10,7 +11,7 @@ const instagramLink = computed(() => buildInstagramProfileLink(props.instagramHa
 
 <template>
   <section id="contact" class="mx-auto max-w-3xl px-4 py-16 text-center">
-    <h2 class="mb-3 font-display text-2xl">Let's Talk Jewelry</h2>
+    <h2 class="mb-3 font-display text-2xl text-amore-gold">Let's Talk Jewelry</h2>
     <p class="mb-8 text-neutral-600">
       Have a question about a piece, custom orders, or bridal sets? Reach out — we reply personally.
     </p>
@@ -19,8 +20,9 @@ const instagramLink = computed(() => buildInstagramProfileLink(props.instagramHa
         :href="whatsappLink"
         target="_blank"
         rel="noopener noreferrer"
-        class="rounded-md bg-green-600 px-6 py-3 text-sm font-medium text-white"
+        class="inline-flex items-center gap-2 rounded-md bg-whatsapp px-6 py-3 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
       >
+        <WhatsAppIcon />
         Chat on WhatsApp
       </a>
       <a

@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
 
 // Router import chain pulls in stores/auth -> firebase/config, which would
 // otherwise try to initialize a real Firebase app during this pure
@@ -12,11 +12,29 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn(),
 }))
 
-const { createAppRouter } = await import('../../../src/router/index')
 const { useAuthStore } = await import('../../../src/stores/auth')
 
+// Stub page components so this suite only exercises the navigation guard —
+// importing PublicHome pulls in carousels/videos and is covered elsewhere.
+const StubPage = { template: '<div />' }
+
+const routes: RouteRecordRaw[] = [
+  { path: '/', name: 'public-home', component: StubPage },
+  { path: '/admin/login', name: 'admin-login', component: StubPage },
+  { path: '/admin/products', name: 'admin-products', component: StubPage, meta: { requiresAuth: true } },
+  { path: '/admin', redirect: '/admin/products' },
+]
+
 function buildRouter() {
-  return createAppRouter(createMemoryHistory())
+  const router = createRouter({ history: createMemoryHistory(), routes })
+  router.beforeEach((to) => {
+    const auth = useAuthStore()
+    if (to.meta.requiresAuth && !auth.currentUser) {
+      return { path: '/admin/login' }
+    }
+    return true
+  })
+  return router
 }
 
 describe('router navigation guard', () => {

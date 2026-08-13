@@ -69,6 +69,24 @@ describe('Header', () => {
     expect(wrapper.get('[data-testid="wishlist-count"]').text()).toBe('1')
   })
 
+  it('opens the wishlist drawer when the heart icon is clicked', async () => {
+    const wrapper = mountHeader()
+    expect(document.querySelector('[data-testid="wishlist-drawer"]')).toBeNull()
+
+    await wrapper.get('[data-testid="wishlist-link"]').trigger('click')
+    expect(document.querySelector('[data-testid="wishlist-drawer"]')).not.toBeNull()
+  })
+
+  it('places the Amore brand logo before the navigation links', () => {
+    const wrapper = mountHeader()
+    const row = wrapper.get('[data-testid="brand-logo"]').element.parentElement!
+    const children = Array.from(row.children)
+    const logoIndex = children.findIndex((el) => el.getAttribute('data-testid') === 'brand-logo')
+    const navIndex = children.findIndex((el) => el.tagName === 'NAV')
+    expect(logoIndex).toBeGreaterThanOrEqual(0)
+    expect(navIndex).toBeGreaterThan(logoIndex)
+  })
+
   it('toggles the search overlay when the search icon is clicked', async () => {
     const wrapper = mountHeader()
     expect(wrapper.find('[data-testid="search-overlay"]').exists()).toBe(false)

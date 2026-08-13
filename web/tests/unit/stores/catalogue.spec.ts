@@ -111,6 +111,31 @@ describe('catalogue store filtering/search', () => {
     expect(store.filteredProducts.map((p) => p.id).sort()).toEqual(['p1', 'p2'])
   })
 
+  it('matches products when the search term is a category name', () => {
+    const store = useCatalogueStore()
+    store.$patch({
+      categories: [category, category2],
+      products: [
+        makeProduct({
+          id: 'p1',
+          categoryId: 'cat-necklace',
+          name: 'Heritage Haar',
+          description: 'handcrafted bridal set',
+        }),
+        makeProduct({
+          id: 'p2',
+          categoryId: 'cat-ring',
+          name: 'Solitaire Band',
+          description: 'everyday gold band',
+        }),
+      ],
+    })
+
+    store.setFilters({ searchTerm: 'necklace' })
+
+    expect(store.filteredProducts.map((p) => p.id)).toEqual(['p1'])
+  })
+
   it('combines multiple filters (category AND search)', () => {
     const store = useCatalogueStore()
     store.$patch({

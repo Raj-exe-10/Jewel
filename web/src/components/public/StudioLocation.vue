@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { buildGeneralEnquiryLink } from '../../composables/useWhatsAppLink'
+import { STUDIO_IMAGE } from '../../data/storefrontMedia'
+import WhatsAppIcon from './WhatsAppIcon.vue'
 
 const props = defineProps<{ businessPhoneE164: string }>()
 
@@ -11,8 +13,8 @@ const whatsappLink = computed(() => buildGeneralEnquiryLink(props.businessPhoneE
   <section class="bg-amore-cream py-14">
     <div class="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:grid-cols-2">
       <img
-        src="https://picsum.photos/seed/amore-studio/800/600"
-        alt="Amore studio placeholder"
+        :src="STUDIO_IMAGE"
+        alt="Amore studio"
         class="aspect-[4/3] w-full rounded-2xl object-cover"
       />
       <div>
@@ -37,8 +39,9 @@ const whatsappLink = computed(() => buildGeneralEnquiryLink(props.businessPhoneE
             target="_blank"
             rel="noopener noreferrer"
             data-testid="studio-appointment-link"
-            class="rounded-full bg-amore-charcoal px-5 py-2.5 text-sm font-medium text-white transition hover:bg-black"
+            class="inline-flex items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
           >
+            <WhatsAppIcon />
             Book an Appointment
           </a>
         </div>

@@ -4,6 +4,7 @@ import { useCatalogueStore } from '../../stores/catalogue'
 import FilterChips from './FilterChips.vue'
 import ProductCard from './ProductCard.vue'
 import SearchBox from './SearchBox.vue'
+import SectionHeading from './SectionHeading.vue'
 
 defineProps<{ businessPhoneE164: string }>()
 
@@ -18,7 +19,7 @@ const hasResults = computed(() => catalogue.filteredProducts.length > 0)
 
 <template>
   <section id="catalogue" class="mx-auto max-w-6xl px-4 py-12">
-    <h2 class="mb-6 font-display text-2xl">Shop the Collection</h2>
+    <SectionHeading title="Shop the Collection" subtitle="Browse, filter, and enquire on WhatsApp" icon="✦" />
 
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <FilterChips />

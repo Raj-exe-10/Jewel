@@ -3,22 +3,27 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
+import { BRIDAL_BANNER } from '../../data/storefrontMedia'
 import { useCatalogueStore } from '../../stores/catalogue'
 import ProductCard from './ProductCard.vue'
+import SectionHeading from './SectionHeading.vue'
 
 defineProps<{ businessPhoneE164: string }>()
 
 const catalogue = useCatalogueStore()
 const nav = useCatalogueNav()
 const bridalProducts = computed(() => catalogue.products.filter((p) => p.isBridal))
+const slideCount = computed(() => bridalProducts.value.length)
 
 function categoryNameFor(categoryId: string): string {
   return catalogue.categories.find((c) => c.id === categoryId)?.name ?? ''
 }
 
-const { emblaRef, scrollPrev, scrollNext } = useCarousel({ align: 'start', dragFree: true })
-// Bound via the plain `ref="emblaRef"` template attribute below; vue-tsc's
-// unused-locals check can't see that indirect usage.
+const { emblaRef, scrollPrev, scrollNext } = useCarousel(
+  { align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
+  [],
+  slideCount,
+)
 void emblaRef
 </script>
 
@@ -27,7 +32,7 @@ void emblaRef
     <div class="mx-auto max-w-6xl px-4">
       <div class="mb-8 grid overflow-hidden rounded-2xl bg-amore-charcoal text-amore-cream sm:grid-cols-2">
         <img
-          src="https://picsum.photos/seed/amore-bridal-banner/800/900"
+          :src="BRIDAL_BANNER"
           alt="Bridal ensembles by Amore"
           class="h-64 w-full object-cover sm:h-full"
         />
@@ -48,15 +53,15 @@ void emblaRef
         </div>
       </div>
 
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="font-display text-xl text-neutral-900">Bridal Ensembles</h3>
-        <div class="hidden gap-2 sm:flex">
+      <div class="relative mb-6">
+        <SectionHeading title="Bridal Ensembles" icon="♛" />
+        <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
           <button
             type="button"
             aria-label="Previous"
             data-testid="bridal-prev"
-            class="rounded-full border border-neutral-300 p-1.5 transition hover:bg-white"
-            @click="scrollPrev"
+            class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
+            @click.stop="scrollPrev"
           >
             <ChevronLeftIcon class="h-4 w-4" />
           </button>
@@ -64,8 +69,8 @@ void emblaRef
             type="button"
             aria-label="Next"
             data-testid="bridal-next"
-            class="rounded-full border border-neutral-300 p-1.5 transition hover:bg-white"
-            @click="scrollNext"
+            class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
+            @click.stop="scrollNext"
           >
             <ChevronRightIcon class="h-4 w-4" />
           </button>
@@ -73,11 +78,11 @@ void emblaRef
       </div>
 
       <div ref="emblaRef" class="overflow-hidden">
-        <div class="flex gap-4">
+        <div class="flex">
           <div
             v-for="product in bridalProducts"
             :key="product.id"
-            class="min-w-0 flex-[0_0_70%] sm:flex-[0_0_32%] lg:flex-[0_0_23%]"
+            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_40%] lg:flex-[0_0_28%]"
           >
             <ProductCard
               :product="product"

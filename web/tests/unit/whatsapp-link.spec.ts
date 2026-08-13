@@ -3,6 +3,7 @@ import {
   buildGeneralEnquiryLink,
   buildInstagramProfileLink,
   buildProductEnquiryLink,
+  buildWishlistEnquiryLink,
 } from '../../src/composables/useWhatsAppLink'
 import type { Product } from '../../src/types/catalogue'
 
@@ -79,6 +80,24 @@ describe('buildGeneralEnquiryLink', () => {
     const parsed = new URL(url)
 
     expect(parsed.searchParams.get('text')).not.toMatch(/necklace|ring|earring/i)
+  })
+})
+
+describe('buildWishlistEnquiryLink', () => {
+  it('lists every wishlisted product name in the WhatsApp message', () => {
+    const url = buildWishlistEnquiryLink(
+      [makeProduct({ name: 'Kundan Choker' }), makeProduct({ name: 'Polki Ring' })],
+      '919999999999',
+    )
+    const text = new URL(url).searchParams.get('text') ?? ''
+
+    expect(text).toContain('Kundan Choker')
+    expect(text).toContain('Polki Ring')
+  })
+
+  it('falls back to a general enquiry when the wishlist is empty', () => {
+    const url = buildWishlistEnquiryLink([], '919999999999')
+    expect(new URL(url).searchParams.get('text')).toMatch(/jewelry|jewellery/i)
   })
 })
 

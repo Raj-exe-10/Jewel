@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import Autoplay from 'embla-carousel-autoplay'
+import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
+import { HERO_IMAGES } from '../../data/storefrontMedia'
 
 const nav = useCatalogueNav()
 
 const slides = [
   {
     id: 'bridal',
-    image: 'https://picsum.photos/seed/amore-hero-1/1600/900',
+    image: HERO_IMAGES.bridal,
     eyebrow: 'New Season',
     heading: 'Discover the Bridal Edit',
     subheading: 'Kundan, polki, and antique pieces made to be heirlooms.',
@@ -18,7 +20,7 @@ const slides = [
   },
   {
     id: 'new-arrivals',
-    image: 'https://picsum.photos/seed/amore-hero-2/1600/900',
+    image: HERO_IMAGES.newArrivals,
     eyebrow: 'Just In',
     heading: 'New Arrivals, Handcrafted with Love',
     subheading: 'Everyday pieces that go from desk to dinner.',
@@ -27,7 +29,7 @@ const slides = [
   },
   {
     id: 'signature',
-    image: 'https://picsum.photos/seed/amore-hero-3/1600/900',
+    image: HERO_IMAGES.signature,
     eyebrow: "Founder's Picks",
     heading: 'Signature Pieces, Made to Be Loved',
     subheading: 'Our most-requested designs, curated by the Amore team.',
@@ -36,11 +38,12 @@ const slides = [
   },
 ]
 
-const { emblaRef, selectedIndex, scrollSnaps, scrollPrev, scrollNext, scrollTo } = useCarousel({ loop: true }, [
-  Autoplay({ delay: 5500, stopOnInteraction: false }),
-])
-// Bound via the plain `ref="emblaRef"` template attribute below; vue-tsc's
-// unused-locals check can't see that indirect usage.
+const slideCount = computed(() => slides.length)
+const { emblaRef, selectedIndex, scrollSnaps, scrollPrev, scrollNext, scrollTo } = useCarousel(
+  { loop: true },
+  [Autoplay({ delay: 5500, stopOnInteraction: false })],
+  slideCount,
+)
 void emblaRef
 </script>
 

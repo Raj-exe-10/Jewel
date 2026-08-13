@@ -40,8 +40,35 @@ const staffAccounts = [
   { email: 'staff2@amore.test', password: 'password123', displayName: 'Staff Two' },
 ]
 
-function placeholderPhoto(seed: number): string {
-  return `https://picsum.photos/seed/amore-${seed}/600/800`
+/** Jewelry-themed Unsplash placeholders keyed by category name. */
+const jewelryPhotos: Record<string, string> = {
+  Necklace: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&h=800&q=80',
+  Earring: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&h=800&q=80',
+  Bangles: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=600&h=800&q=80',
+  Rings: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&h=800&q=80',
+  Bracelets: 'https://images.unsplash.com/photo-1573408301185-51446e1f1da3?auto=format&fit=crop&w=600&h=800&q=80',
+  Earchains: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&h=800&q=80',
+  'Maang Tikka': 'https://images.unsplash.com/photo-1599643478518-a384e7de4b6b?auto=format&fit=crop&w=600&h=800&q=80',
+  'Hathphool/Sheekhphool':
+    'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=600&h=800&q=80',
+}
+
+const productNameByCategory: Record<string, string[]> = {
+  Necklace: ['Kundan Choker', 'Temple Haram', 'Polki Layered Necklace', 'Antique Rani Haar'],
+  Earring: ['Chandbali Earrings', 'Jhumka Pair', 'Polki Studs', 'Statement Drops'],
+  Bangles: ['Kundan Bangle Set', 'Meenakari Kadas', 'Temple Bangles', 'Antique Chooda'],
+  Rings: ['Polki Cocktail Ring', 'Kundan Solitaire', 'Temple Band', 'Vintage Signet'],
+  Bracelets: ['Delicate Chain Bracelet', 'Kundan Cuff', 'Pearl Tennis Bracelet', 'Antique Kada'],
+  Earchains: ['Classic Earchain', 'Pearl Earchain', 'Kundan Earchain', 'Temple Earchain'],
+  'Maang Tikka': ['Bridal Maang Tikka', 'Polki Matha Patti', 'Antique Tikka', 'Minimal Tikka'],
+  'Hathphool/Sheekhphool': ['Bridal Hathphool', 'Polki Hand Harness', 'Kundan Sheekhphool', 'Pearl Hathphool'],
+}
+
+function placeholderPhoto(categoryName: string): string {
+  return (
+    jewelryPhotos[categoryName] ??
+    'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&h=800&q=80'
+  )
 }
 
 async function seedTaxonomy(collectionName: string, names: string[]) {
@@ -59,16 +86,20 @@ async function seedProducts(categoryIds: string[], collectionIds: string[], styl
   const now = Date.now()
 
   for (let i = 0; i < 20; i++) {
-    const categoryId = categoryIds[i % categoryIds.length]
-    const collectionId = i % 3 === 0 ? collectionIds[i % collectionIds.length] : null
-    const productStyleTags = i % 2 === 0 ? [styleTagIds[i % styleTagIds.length]] : []
+    const categoryIndex = i % categories.length
+    const categoryName = categories[categoryIndex]!
+    const categoryId = categoryIds[categoryIndex]!
+    const collectionId = i % 3 === 0 ? collectionIds[i % collectionIds.length]! : null
+    const productStyleTags = i % 2 === 0 ? [styleTagIds[i % styleTagIds.length]!] : []
+    const namesForCategory = productNameByCategory[categoryName] ?? [`Amore Piece #${i + 1}`]
+    const name = namesForCategory[i % namesForCategory.length]!
     const ref = db.collection('products').doc()
 
     await ref.set({
-      name: `Placeholder Piece #${i + 1}`,
+      name,
       priceInr: 3000 + i * 750,
-      description: 'Placeholder description — replace with real product copy before launch.',
-      photoUrls: [placeholderPhoto(i + 1)],
+      description: `Handcrafted ${categoryName.toLowerCase()} from the Amore atelier — enquire for custom finishes.`,
+      photoUrls: [placeholderPhoto(categoryName)],
       categoryId,
       styleTagIds: productStyleTags,
       collectionId,

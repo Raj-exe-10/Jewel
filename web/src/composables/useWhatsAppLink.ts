@@ -20,6 +20,17 @@ export function buildGeneralEnquiryLink(businessPhoneE164: string): string {
   return `https://wa.me/${businessPhoneE164}?text=${encodeURIComponent(message)}`
 }
 
+/** Enquire about every product currently on the wishlist in one WhatsApp message. */
+export function buildWishlistEnquiryLink(products: Product[], businessPhoneE164: string): string {
+  assertPhone(businessPhoneE164)
+  if (products.length === 0) {
+    return buildGeneralEnquiryLink(businessPhoneE164)
+  }
+  const list = products.map((p, index) => `${index + 1}. ${p.name}`).join('\n')
+  const message = `Hi Amore, I'm interested in these wishlist pieces:\n${list}\nCould you share more details?`
+  return `https://wa.me/${businessPhoneE164}?text=${encodeURIComponent(message)}`
+}
+
 export function buildInstagramProfileLink(instagramHandle: string): string {
   const handle = instagramHandle.trim().replace(/^@/, '')
   return `https://instagram.com/${handle}`

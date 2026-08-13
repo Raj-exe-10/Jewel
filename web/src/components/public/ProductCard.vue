@@ -3,8 +3,10 @@ import { computed } from 'vue'
 import { HeartIcon as HeartOutlineIcon } from '@heroicons/vue/24/outline'
 import { HeartIcon as HeartSolidIcon } from '@heroicons/vue/24/solid'
 import { buildProductEnquiryLink } from '../../composables/useWhatsAppLink'
+import { jewelryImageFor } from '../../data/storefrontMedia'
 import { useWishlistStore } from '../../stores/wishlist'
 import type { Product } from '../../types/catalogue'
+import WhatsAppIcon from './WhatsAppIcon.vue'
 
 const props = defineProps<{
   product: Product
@@ -16,12 +18,20 @@ const wishlist = useWishlistStore()
 const isWishlisted = computed(() => wishlist.isWishlisted(props.product.id))
 const enquiryLink = computed(() => buildProductEnquiryLink(props.product, props.businessPhoneE164))
 const formattedPrice = computed(() => `₹${props.product.priceInr.toLocaleString('en-IN')}`)
+const photoUrl = computed(() => {
+  const url = props.product.photoUrls[0]
+  if (!url || url.includes('picsum.photos')) {
+    return jewelryImageFor(props.categoryName || props.product.name)
+  }
+  return url
+})
 </script>
 
 <template>
   <article
+    :id="`product-${product.id}`"
     data-testid="product-card"
-    class="group relative flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow duration-300 hover:shadow-lg"
+    class="group relative flex scroll-mt-28 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow duration-300 hover:shadow-lg"
   >
     <button
       type="button"
@@ -40,7 +50,7 @@ const formattedPrice = computed(() => `₹${props.product.priceInr.toLocaleStrin
 
     <div class="overflow-hidden">
       <img
-        :src="product.photoUrls[0]"
+        :src="photoUrl"
         :alt="product.name"
         class="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
       />
@@ -57,8 +67,9 @@ const formattedPrice = computed(() => `₹${props.product.priceInr.toLocaleStrin
         target="_blank"
         rel="noopener noreferrer"
         data-testid="whatsapp-link"
-        class="mt-3 inline-flex items-center justify-center rounded-md bg-amore-charcoal px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
+        class="mt-3 inline-flex items-center justify-center gap-2 rounded-md bg-whatsapp px-4 py-2 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
       >
+        <WhatsAppIcon />
         Enquire on WhatsApp
       </a>
     </div>

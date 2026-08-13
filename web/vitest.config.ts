@@ -10,9 +10,9 @@ export default defineConfig({
     setupFiles: ['./tests/unit/setup.ts'],
     include: ['tests/unit/**/*.spec.ts'],
     // The public storefront route lazily pulls in a lot of components
-    // (carousels, icon sets); the first dynamic import in a cold test run
-    // can exceed Vitest's 5s default.
-    testTimeout: 15000,
+    // (carousels, icon sets, video tiles); the first dynamic import in a cold
+    // test run can exceed Vitest's default.
+    testTimeout: 30000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
