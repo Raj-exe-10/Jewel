@@ -60,7 +60,7 @@ onUnmounted(() => {
     <button
       type="button"
       :data-testid="`${testid}-toggle`"
-      class="flex items-center gap-1 text-sm font-medium tracking-wide text-neutral-700 transition hover:text-amore-charcoal"
+      class="flex items-center gap-1 whitespace-nowrap text-sm font-medium tracking-wide text-amore-cream transition hover:text-amore-wordmark"
       @click="isOpen = !isOpen"
     >
       {{ label }}

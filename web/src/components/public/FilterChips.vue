@@ -4,9 +4,11 @@ import { useCatalogueStore } from '../../stores/catalogue'
 const catalogue = useCatalogueStore()
 
 function toggleCategory(categoryId: string) {
-  catalogue.setFilters({
-    categoryId: catalogue.filters.categoryId === categoryId ? null : categoryId,
-  })
+  if (catalogue.filters.categoryId === categoryId) {
+    catalogue.setFilters({ categoryId: null })
+  } else {
+    catalogue.replaceFilters({ categoryId })
+  }
 }
 </script>
 

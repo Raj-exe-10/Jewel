@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AdminLayout from '../../components/admin/AdminLayout.vue'
 import ConfirmDeleteDialog from '../../components/admin/ConfirmDeleteDialog.vue'
 import ProductForm from '../../components/admin/ProductForm.vue'
+import { coverUrlFromMedia, mediaFromProduct } from '../../lib/productMedia'
+import { findHomepageProductDependencies } from '../../lib/productHomepageDeps'
 import { useCatalogueStore } from '../../stores/catalogue'
+import { useHomepageStore } from '../../stores/homepage'
 import type { Product } from '../../types/catalogue'
 
 const catalogue = useCatalogueStore()
+const homepage = useHomepageStore()
 
 const isFormOpen = ref(false)
 const editingProduct = ref<Product | null>(null)
@@ -15,6 +19,7 @@ const deleteError = ref<string | null>(null)
 
 onMounted(() => {
   catalogue.subscribeToCatalogue()
+  homepage.subscribeToSections()
 })
 
 function openCreateForm() {
@@ -36,11 +41,25 @@ function categoryNameFor(categoryId: string): string {
   return catalogue.categories.find((c) => c.id === categoryId)?.name ?? 'Uncategorized'
 }
 
+function productCover(product: Product): string {
+  return coverUrlFromMedia(mediaFromProduct(product), product.photoUrls[0] ?? '')
+}
+
+const deleteDependencyWarning = computed(() => {
+  if (!pendingDelete.value) return null
+  const deps = findHomepageProductDependencies(pendingDelete.value, homepage.sections)
+  if (deps.length === 0) return null
+  const titles = deps.map((dep) => dep.sectionTitle).join(', ')
+  return `This product is used on the homepage (${titles}). Deleting it will remove it from hand-picked sections. Flag-based sections will stop showing it automatically.`
+})
+
 async function confirmDelete() {
   if (!pendingDelete.value) return
   deleteError.value = null
   try {
-    await catalogue.deleteProduct(pendingDelete.value.id)
+    const productId = pendingDelete.value.id
+    await homepage.scrubProductFromSections(productId)
+    await catalogue.deleteProduct(productId)
     pendingDelete.value = null
   } catch {
     deleteError.value = 'Could not delete this product. Please check your connection and try again.'
@@ -93,7 +112,7 @@ async function confirmDelete() {
         class="flex items-center justify-between gap-4 px-4 py-3"
       >
         <div class="flex items-center gap-3">
-          <img :src="product.photoUrls[0]" :alt="product.name" class="h-12 w-12 rounded object-cover" />
+          <img :src="productCover(product)" :alt="product.name" class="h-12 w-12 rounded object-cover" />
           <div>
             <p class="font-medium">{{ product.name }}</p>
             <p class="text-xs text-neutral-500">
@@ -129,6 +148,7 @@ async function confirmDelete() {
     <ConfirmDeleteDialog
       :open="pendingDelete !== null"
       :item-label="pendingDelete?.name ?? ''"
+      :warning="deleteDependencyWarning"
       @confirm="confirmDelete"
       @cancel="pendingDelete = null"
     />

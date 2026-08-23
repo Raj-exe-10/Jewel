@@ -63,6 +63,10 @@ export const useCatalogueStore = defineStore('catalogue', {
     setFilters(partial: Partial<CatalogueFilters>) {
       this.filters = { ...this.filters, ...partial }
     },
+    /** Replace all filters — use when the user picks a new search or taxonomy filter. */
+    replaceFilters(partial: Partial<CatalogueFilters>) {
+      this.filters = { ...EMPTY_FILTERS, ...partial }
+    },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }
     },

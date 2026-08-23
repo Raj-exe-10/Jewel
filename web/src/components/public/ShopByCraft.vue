@@ -26,7 +26,7 @@ const tiles = computed(() =>
 const slideCount = computed(() => tiles.value.length)
 
 const { emblaRef, scrollPrev, scrollNext } = useCarousel(
-  { align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
+  { loop: true, align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
   [],
   slideCount,
 )
@@ -34,7 +34,7 @@ void emblaRef
 </script>
 
 <template>
-  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 py-14">
+  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="mx-auto max-w-screen-2xl px-4 py-8">
     <div class="relative mb-2">
       <SectionHeading :title="resolved.title" :subtitle="resolved.subtitle" :icon="resolved.icon" />
       <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">

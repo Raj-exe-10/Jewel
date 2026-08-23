@@ -8,7 +8,6 @@ import ContactSection from './ContactSection.vue'
 import FoundersFavourites from './FoundersFavourites.vue'
 import HeroBanner from './HeroBanner.vue'
 import HeroVisuals from './HeroVisuals.vue'
-import InstagramGallery from './InstagramGallery.vue'
 import ShopByCategories from './ShopByCategories.vue'
 import ShopByCraft from './ShopByCraft.vue'
 import ShopTheStyle from './ShopTheStyle.vue'
@@ -30,7 +29,6 @@ const typeMap: Record<string, Component> = {
   collection_tiles: ShopByCraft,
   catalogue_grid: CatalogueGrid,
   about: AboutSection,
-  instagram_gallery: InstagramGallery,
   studio_location: StudioLocation,
   contact: ContactSection,
 }
@@ -45,19 +43,21 @@ function componentFor(section: HomepageSection): Component {
 </script>
 
 <template>
-  <div v-for="section in sections" :key="section.id" class="relative">
-    <p
-      v-if="showEmptyPlaceholders"
-      class="pointer-events-none sticky top-0 z-10 border-b border-dashed border-amore-gold/40 bg-amore-cream/90 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-neutral-500"
-      data-testid="section-preview-label"
-    >
-      {{ section.title }}
-    </p>
-    <component
-      :is="componentFor(section)"
-      :section="section"
-      :business-phone-e164="businessPhoneE164"
-      :instagram-handle="instagramHandle"
-    />
-  </div>
+  <template v-for="section in sections" :key="section.id">
+    <div v-if="section.type !== 'instagram_gallery'" class="relative">
+      <p
+        v-if="showEmptyPlaceholders"
+        class="pointer-events-none sticky top-0 z-10 border-b border-dashed border-amore-gold/40 bg-amore-cream/90 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-neutral-500"
+        data-testid="section-preview-label"
+      >
+        {{ section.title }}
+      </p>
+      <component
+        :is="componentFor(section)"
+        :section="section"
+        :business-phone-e164="businessPhoneE164"
+        :instagram-handle="instagramHandle"
+      />
+    </div>
+  </template>
 </template>

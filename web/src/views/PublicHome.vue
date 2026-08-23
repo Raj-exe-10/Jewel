@@ -5,20 +5,20 @@ import FloatingWhatsAppButton from '../components/public/FloatingWhatsAppButton.
 import Footer from '../components/public/Footer.vue'
 import Header from '../components/public/Header.vue'
 import HomepageRenderer from '../components/public/HomepageRenderer.vue'
+import { useBusinessStore } from '../stores/business'
 import { useCatalogueStore } from '../stores/catalogue'
 import { useHomepageStore } from '../stores/homepage'
 import { useWishlistStore } from '../stores/wishlist'
 
-const businessPhoneE164 = import.meta.env.VITE_WHATSAPP_NUMBER as string
-const instagramHandle = import.meta.env.VITE_INSTAGRAM_HANDLE as string
-
 const catalogue = useCatalogueStore()
 const homepage = useHomepageStore()
 const wishlist = useWishlistStore()
+const business = useBusinessStore()
 
 onMounted(() => {
   catalogue.subscribeToCatalogue()
   homepage.subscribeToSections()
+  business.subscribeToProfile()
   wishlist.load()
 })
 
@@ -45,16 +45,16 @@ useHead({
 </script>
 
 <template>
-  <div>
-    <Header :business-phone-e164="businessPhoneE164" />
+  <div class="min-h-screen bg-amore-theme">
+    <Header :business-phone-e164="business.whatsappNumberE164" />
     <main>
       <HomepageRenderer
         :sections="homepage.displaySections"
-        :business-phone-e164="businessPhoneE164"
-        :instagram-handle="instagramHandle"
+        :business-phone-e164="business.whatsappNumberE164"
+        :instagram-handle="business.instagramHandle"
       />
     </main>
-    <Footer :instagram-handle="instagramHandle" :business-phone-e164="businessPhoneE164" />
-    <FloatingWhatsAppButton :business-phone-e164="businessPhoneE164" />
+    <Footer :instagram-handle="business.instagramHandle" :business-phone-e164="business.whatsappNumberE164" />
+    <FloatingWhatsAppButton :business-phone-e164="business.whatsappNumberE164" />
   </div>
 </template>

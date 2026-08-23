@@ -52,7 +52,9 @@ describe('FoundersFavourites', () => {
     const wrapper = mount(FoundersFavourites, { props: { businessPhoneE164: '919999999999' } })
 
     const cards = wrapper.findAll('[data-testid="product-card"]')
-    expect(cards).toHaveLength(2)
+    // Two favourites are duplicated (<6) so Embla can loop.
+    expect(cards).toHaveLength(4)
+    expect(wrapper.find('#founders-favourites-products').exists()).toBe(true)
   })
 
   it('renders nothing when there are no founder favourites', () => {

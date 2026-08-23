@@ -10,6 +10,7 @@ const links = [
   { to: '/admin/homepage', label: 'Homepage', testid: 'nav-homepage' },
   { to: '/admin/products', label: 'Products', testid: 'nav-products' },
   { to: '/admin/taxonomies', label: 'Taxonomies', testid: 'nav-taxonomies' },
+  { to: '/admin/business', label: 'Business', testid: 'nav-business' },
 ]
 
 async function onLogout() {

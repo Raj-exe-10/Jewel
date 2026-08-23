@@ -161,26 +161,11 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     },
   }),
   base({
-    id: 'default-instagram',
-    type: 'instagram_gallery',
-    title: 'Follow Along',
-    icon: '◎',
-    anchorId: 'instagram',
-    sortOrder: 9,
-    content: {
-      tiles: INSTAGRAM_TILES.map((tile) => ({
-        id: String(tile.id),
-        imageUrl: tile.image,
-        alt: 'Amore on Instagram',
-      })),
-    },
-  }),
-  base({
     id: 'default-studio',
     type: 'studio_location',
     title: 'By Appointment Only',
     anchorId: 'studio',
-    sortOrder: 10,
+    sortOrder: 9,
     content: {
       imageUrl: STUDIO_IMAGE,
       eyebrow: 'Visit the Studio',
@@ -194,7 +179,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     type: 'contact',
     title: "Let's Talk Jewelry",
     anchorId: 'contact',
-    sortOrder: 11,
+    sortOrder: 10,
     content: {
       bodyParagraphs: [
         'Have a question about a piece, custom orders, or bridal sets? Reach out — we reply personally.',
@@ -212,9 +197,26 @@ const DRAFT_TEMPLATES: Record<SectionType, () => HomepageSectionInput> = {
   collection_tiles: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[5]!),
   catalogue_grid: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[7]!),
   about: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[8]!),
-  instagram_gallery: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[9]!),
-  studio_location: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[10]!),
-  contact: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[11]!),
+  instagram_gallery: () =>
+    omitIds(
+      base({
+        id: 'draft-instagram',
+        type: 'instagram_gallery',
+        title: 'Follow Along',
+        icon: '◎',
+        anchorId: 'instagram',
+        sortOrder: 0,
+        content: {
+          tiles: INSTAGRAM_TILES.map((tile) => ({
+            id: String(tile.id),
+            imageUrl: tile.image,
+            alt: 'Amore on Instagram',
+          })),
+        },
+      }),
+    ),
+  studio_location: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[9]!),
+  contact: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[10]!),
 }
 
 function omitIds(section: HomepageSection): HomepageSectionInput {
@@ -257,13 +259,19 @@ export function createSectionDraft(
   existingTitles: string[] = [],
 ): HomepageSectionInput {
   const draft = DRAFT_TEMPLATES[type]()
-  return {
+  const next: HomepageSectionInput = {
     ...draft,
     title: uniqueSectionTitle(draft.title, existingTitles),
     sortOrder,
     isVisible: true,
     anchorId: `${type}-${sortOrder}`,
   }
+  if (type === 'product_carousel') {
+    next.productSelectionMode = 'manual'
+    next.productIds = []
+    next.productFlag = undefined
+  }
+  return next
 }
 
 export function defaultSectionByAnchor(anchorId: string): HomepageSection {

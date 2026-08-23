@@ -1,5 +1,8 @@
 // Shared catalogue types — mirrors specs/001-amore-jewelry-catalogue/data-model.md
 
+import type { ProductMediaItem } from '../lib/productMedia'
+
+export type { ProductMediaItem }
 export type StyleGroup = 'traditional' | 'modern'
 
 export interface Product {
@@ -7,7 +10,10 @@ export interface Product {
   name: string
   priceInr: number
   description: string
+  /** Derived image URLs for compatibility; prefer `media`. */
   photoUrls: string[]
+  /** Ordered images and/or videos for the product gallery. */
+  media?: ProductMediaItem[]
   categoryId: string
   styleTagIds: string[]
   collectionId: string | null

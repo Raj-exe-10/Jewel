@@ -19,7 +19,6 @@ describe('DEFAULT_HOMEPAGE_SECTIONS', () => {
       'product_carousel',
       'catalogue_grid',
       'about',
-      'instagram_gallery',
       'studio_location',
       'contact',
     ])
@@ -57,13 +56,10 @@ describe('createSectionDraft', () => {
     expect(draft.title).toBe('Shop the Visuals 2')
   })
 
-  it.each([
-    'hero_banner',
-    'video_carousel',
-    'product_carousel',
-    'contact',
-  ] satisfies SectionType[])('returns a draft for %s', (type) => {
-    expect(createSectionDraft(type, 0).type).toBe(type)
+  it('defaults new product_carousel drafts to manual selection', () => {
+    const draft = createSectionDraft('product_carousel', 3)
+    expect(draft.productSelectionMode).toBe('manual')
+    expect(draft.productIds).toEqual([])
   })
 })
 

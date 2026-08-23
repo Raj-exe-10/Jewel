@@ -2,6 +2,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const push = vi.fn(() => Promise.resolve())
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push }),
+  useRoute: () => ({ path: '/' }),
+}))
 vi.mock('../../../src/firebase/config', () => ({ db: {} }))
 vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
 
@@ -10,8 +16,10 @@ const HeroVisuals = (await import('../../../src/components/public/HeroVisuals.vu
 describe('HeroVisuals', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    document.body.innerHTML = '<div id="catalogue"></div>'
+    push.mockClear()
+    document.body.innerHTML = '<div id="catalogue"></div><div id="collection-products"></div>'
     document.getElementById('catalogue')!.scrollIntoView = vi.fn()
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   })
 
   it('renders the "Shop the Visuals" heading', () => {
@@ -32,12 +40,17 @@ describe('HeroVisuals', () => {
     expect(wrapper.find('[data-testid="shop-visuals-next"]').exists()).toBe(true)
   })
 
-  it('clicking a tile scrolls to the catalogue', async () => {
-    const scrollSpy = document.getElementById('catalogue')!.scrollIntoView as ReturnType<typeof vi.fn>
+  it('exposes a products carousel anchor for nav scroll', () => {
+    const wrapper = mount(HeroVisuals)
+    expect(wrapper.find('#shop-the-visuals-products').exists()).toBe(true)
+  })
+
+  it('clicking a tile navigates to the collection', async () => {
     const wrapper = mount(HeroVisuals)
 
     await wrapper.get('[data-testid="shop-visuals-tile"]').trigger('click')
+    await Promise.resolve()
 
-    expect(scrollSpy).toHaveBeenCalled()
+    expect(push).toHaveBeenCalledWith({ name: 'collection', hash: '#collection-products' })
   })
 })

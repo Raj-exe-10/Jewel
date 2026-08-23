@@ -13,7 +13,8 @@ Collection: `products/{productId}`
 | `name` | string | yes | 1-120 chars |
 | `priceInr` | number | yes | integer, >= 0 (rupees, no decimals needed for this scale) |
 | `description` | string | yes | 1-500 chars, short description per FR-005 |
-| `photoUrls` | string[] | yes | 1-8 Firebase Storage download URLs; MUST NOT be empty (edge case: no product without an image) |
+| `photoUrls` | string[] | yes | Derived cover images (image URLs from `media`); kept for compatibility; MUST NOT be empty when any image exists, else may be empty if only videos |
+| `media` | ProductMediaItem[] | yes | Ordered mix of images and videos; at least one item required |
 | `categoryId` | string | yes | references `categories/{categoryId}` |
 | `styleTagIds` | string[] | no | references `styleTags/{styleTagId}`, default `[]` |
 | `collectionId` | string | no | references `collections/{collectionId}`, default `null` |
@@ -29,8 +30,15 @@ Collection: `products/{productId}`
 **Validation rules** (enforced in the `ProductForm` component + tests, mirrored in Security Rules field checks):
 - `name`, `description` non-empty after trim.
 - `priceInr >= 0` and is a finite number.
-- `photoUrls.length >= 1` before a product can be saved (FR edge case: upload failure must not leave a photo-less product).
+- `photoUrls.length >= 1` OR `media` contains at least one item before a product can be saved (FR edge case: upload failure must not leave a media-less product).
 - `categoryId` must reference an existing category at save time.
+
+**ProductMediaItem** (embedded in `media`):
+- `id` string
+- `kind` `"image" | "video"`
+- `url` Storage download URL
+- `posterUrl` optional (videos)
+- `sortOrder` number
 
 **State transitions**: Products have no workflow/status field in this phase (no draft/published distinction) — a saved product is immediately live on the public storefront (FR-024).
 

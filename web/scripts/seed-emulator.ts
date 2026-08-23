@@ -170,11 +170,13 @@ async function seedProducts(categoryIds: string[], collectionIds: string[], styl
     const name = namesForCategory[i % namesForCategory.length]!
     const ref = db.collection('products').doc()
 
+    const photo = placeholderPhoto(categoryName)
     await ref.set({
       name,
       priceInr: 3000 + i * 750,
       description: `Handcrafted ${categoryName.toLowerCase()} from the Amore atelier — enquire for custom finishes.`,
-      photoUrls: [placeholderPhoto(categoryName)],
+      photoUrls: [photo],
+      media: [{ id: `seed-img-${i}`, kind: 'image', url: photo, sortOrder: 0 }],
       categoryId,
       styleTagIds: productStyleTags,
       collectionId,

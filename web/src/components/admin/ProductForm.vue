@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { mediaFromProduct, photoUrlsFromMedia } from '../../lib/productMedia'
 import { useCatalogueStore } from '../../stores/catalogue'
-import type { Product, ProductInput, StyleGroup } from '../../types/catalogue'
-import PhotoUploader from './PhotoUploader.vue'
+import type { Product, ProductInput, ProductMediaItem, StyleGroup } from '../../types/catalogue'
+import ProductMediaUploader from './ProductMediaUploader.vue'
 
 const props = defineProps<{ editing?: Product | null }>()
 const emit = defineEmits<{ saved: [] }>()
@@ -15,12 +16,14 @@ const price = ref(props.editing?.priceInr ?? 0)
 const categoryId = ref(props.editing?.categoryId ?? catalogue.categories[0]?.id ?? '')
 const collectionId = ref(props.editing?.collectionId ?? '')
 const styleTagIds = ref<string[]>([...(props.editing?.styleTagIds ?? [])])
-const photoUrls = ref<string[]>(props.editing?.photoUrls ?? [])
+const media = ref<ProductMediaItem[]>(mediaFromProduct(props.editing ?? { photoUrls: [] }))
 const isNewArrival = ref(props.editing?.isNewArrival ?? false)
 const isFounderFavourite = ref(props.editing?.isFounderFavourite ?? false)
 const isStatementPick = ref(props.editing?.isStatementPick ?? false)
 const isBridal = ref(props.editing?.isBridal ?? false)
 const styleGroup = ref<StyleGroup | ''>(props.editing?.styleGroup ?? '')
+
+const mediaFolderId = computed(() => props.editing?.id ?? 'draft')
 
 watch(
   () => catalogue.categories,
@@ -48,7 +51,7 @@ function validate(): string | null {
   if (!description.value.trim()) return 'Please enter a short description.'
   if (Number(price.value) < 0 || Number.isNaN(Number(price.value))) return 'Price must be zero or more.'
   if (!categoryId.value) return 'Please choose a category.'
-  if (photoUrls.value.length === 0) return 'Please add at least one photo before saving.'
+  if (media.value.length === 0) return 'Please add at least one photo or video before saving.'
   return null
 }
 
@@ -61,11 +64,14 @@ async function onSubmit() {
   formError.value = null
   isSaving.value = true
   try {
+    const orderedMedia = media.value.map((item, sortOrder) => ({ ...item, sortOrder }))
+    const imageUrls = photoUrlsFromMedia(orderedMedia)
     const input: ProductInput = {
       name: name.value.trim(),
       description: description.value.trim(),
       priceInr: Number(price.value),
-      photoUrls: photoUrls.value,
+      photoUrls: imageUrls.length > 0 ? imageUrls : orderedMedia.map((item) => item.posterUrl || item.url),
+      media: orderedMedia,
       categoryId: categoryId.value,
       styleTagIds: styleTagIds.value,
       collectionId: collectionId.value || null,
@@ -188,8 +194,8 @@ async function onSubmit() {
     </label>
 
     <div>
-      <span class="mb-1 block text-sm text-neutral-700">Photos</span>
-      <PhotoUploader v-model="photoUrls" />
+      <span class="mb-1 block text-sm text-neutral-700">Photos & videos</span>
+      <ProductMediaUploader v-model="media" :product-id="mediaFolderId" />
     </div>
 
     <p v-if="formError" data-testid="form-error" class="text-sm text-red-600">{{ formError }}</p>

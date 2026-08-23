@@ -1,97 +1,40 @@
 <script setup lang="ts">
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
-import { useCarousel } from '../../composables/useCarousel'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
 import { defaultSectionByAnchor } from '../../data/defaultSections'
-import { productsForSection } from '../../lib/sectionProducts'
-import { useCatalogueStore } from '../../stores/catalogue'
 import type { HomepageSection, ProductCarouselContent } from '../../types/homepage'
-import ProductCard from './ProductCard.vue'
-import SectionHeading from './SectionHeading.vue'
 
 const props = defineProps<{ businessPhoneE164: string; section?: HomepageSection }>()
 
-const catalogue = useCatalogueStore()
 const nav = useCatalogueNav()
 const resolved = computed(() => props.section ?? defaultSectionByAnchor('bridal'))
 const content = computed(() => resolved.value.content as ProductCarouselContent)
-const bridalProducts = computed(() => productsForSection(resolved.value, catalogue.products))
-const slideCount = computed(() => bridalProducts.value.length)
-
-function categoryNameFor(categoryId: string): string {
-  return catalogue.categories.find((c) => c.id === categoryId)?.name ?? ''
-}
-
-const { emblaRef, scrollPrev, scrollNext } = useCarousel(
-  { align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
-  [],
-  slideCount,
-)
-void emblaRef
 </script>
 
 <template>
-  <section v-if="bridalProducts.length > 0" :id="resolved.anchorId" class="bg-amore-cream py-14">
-    <div class="mx-auto max-w-6xl px-4">
-      <div class="mb-8 grid overflow-hidden rounded-2xl bg-amore-charcoal text-amore-cream sm:grid-cols-2">
+  <section :id="resolved.anchorId" class="bg-amore-theme py-8">
+    <div class="mx-auto max-w-screen-2xl px-4">
+      <div
+        class="mx-auto grid max-w-5xl overflow-hidden rounded-2xl bg-amore-charcoal text-amore-cream sm:grid-cols-2"
+        data-testid="bridal-banner"
+      >
         <img
           :src="content.bannerImageUrl"
           :alt="content.bannerHeading ?? resolved.title"
-          class="h-64 w-full object-cover sm:h-full"
+          class="h-full min-h-48 w-full object-cover sm:min-h-64"
         />
-        <div class="flex flex-col justify-center gap-3 p-8">
+        <div class="flex min-h-48 flex-col justify-center gap-3 p-6 sm:min-h-64 sm:p-8">
           <p class="text-xs uppercase tracking-[0.3em] text-amore-gold">{{ content.bannerEyebrow }}</p>
-          <h2 class="font-display text-3xl">{{ content.bannerHeading }}</h2>
-          <p class="text-sm text-amore-cream/80">{{ content.bannerBody }}</p>
+          <h2 class="font-display text-2xl sm:text-3xl">{{ content.bannerHeading }}</h2>
+          <p class="text-sm text-amore-cream/80 sm:text-base">{{ content.bannerBody }}</p>
           <button
             type="button"
             data-testid="bridal-cta"
-            class="mt-2 w-fit rounded-full bg-white px-6 py-2.5 text-sm font-medium text-amore-charcoal transition hover:bg-amore-cream"
+            class="mt-2 w-fit rounded-full bg-white px-5 py-2.5 text-sm font-medium text-amore-charcoal transition hover:bg-amore-theme"
             @click="nav.filterByBridal"
           >
             {{ content.bannerCtaLabel }}
           </button>
-        </div>
-      </div>
-
-      <div class="relative mb-6">
-        <SectionHeading :title="resolved.title" :icon="resolved.icon" />
-        <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
-          <button
-            type="button"
-            aria-label="Previous"
-            data-testid="bridal-prev"
-            class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
-            @click.stop="scrollPrev"
-          >
-            <ChevronLeftIcon class="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Next"
-            data-testid="bridal-next"
-            class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
-            @click.stop="scrollNext"
-          >
-            <ChevronRightIcon class="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <div ref="emblaRef" class="overflow-hidden">
-        <div class="flex">
-          <div
-            v-for="product in bridalProducts"
-            :key="product.id"
-            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_40%] lg:flex-[0_0_28%]"
-          >
-            <ProductCard
-              :product="product"
-              :category-name="categoryNameFor(product.categoryId)"
-              :business-phone-e164="businessPhoneE164"
-            />
-          </div>
         </div>
       </div>
     </div>

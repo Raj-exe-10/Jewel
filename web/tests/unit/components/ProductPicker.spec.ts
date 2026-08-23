@@ -37,13 +37,24 @@ describe('ProductPicker', () => {
     setActivePinia(createPinia())
   })
 
-  it('emits the product id when a checkbox is selected', async () => {
+  it('filters dropdown options by search and adds a product from the list', async () => {
     const store = useCatalogueStore()
-    store.$patch({ products: [makeProduct({ id: 'p1' }), makeProduct({ id: 'p2', name: 'Ring' })] })
+    store.$patch({
+      products: [makeProduct({ id: 'p1' }), makeProduct({ id: 'p2', name: 'Polki Ring' })],
+    })
 
     const wrapper = mount(ProductPicker, { props: { modelValue: [] } })
-    await wrapper.get('[data-testid="pick-product-p1"]').setValue(true)
+    await wrapper.get('[data-testid="product-picker-search"]').setValue('Polki')
+    expect(wrapper.find('[data-testid="pick-product-p1"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="pick-product-p2"]').trigger('click')
 
-    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toEqual(['p1'])
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toEqual(['p2'])
+  })
+
+  it('shows an empty state when there are no catalogue products', () => {
+    const store = useCatalogueStore()
+    store.$patch({ products: [] })
+    const wrapper = mount(ProductPicker, { props: { modelValue: [] } })
+    expect(wrapper.get('[data-testid="product-picker-empty"]').text()).toMatch(/products first/i)
   })
 })

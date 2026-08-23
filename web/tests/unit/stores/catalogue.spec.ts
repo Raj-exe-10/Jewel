@@ -174,6 +174,19 @@ describe('catalogue store filtering/search', () => {
     expect(store.filteredProducts).toHaveLength(2)
   })
 
+  it('replaceFilters resets other fields when setting one filter', () => {
+    const store = useCatalogueStore()
+    store.setFilters({ categoryId: 'cat-ring', searchTerm: 'gold', isBridal: true })
+
+    store.replaceFilters({ categoryId: 'cat-necklace' })
+
+    expect(store.filters.categoryId).toBe('cat-necklace')
+    expect(store.filters.searchTerm).toBe('')
+    expect(store.filters.isBridal).toBeNull()
+    expect(store.filters.collectionId).toBeNull()
+    expect(store.filters.styleTagId).toBeNull()
+  })
+
   it('exposes the taxonomy reference data unmodified', () => {
     const store = useCatalogueStore()
     store.$patch({ categories: [category], collections: [collection], styleTags: [styleTag] })

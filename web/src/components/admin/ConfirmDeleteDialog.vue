@@ -1,5 +1,9 @@
 <script setup lang="ts">
-defineProps<{ open: boolean; itemLabel: string }>()
+defineProps<{
+  open: boolean
+  itemLabel: string
+  warning?: string | null
+}>()
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
 </script>
 
@@ -10,10 +14,17 @@ const emit = defineEmits<{ confirm: []; cancel: [] }>()
     role="alertdialog"
     aria-modal="true"
   >
-    <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-      <p class="mb-4 text-sm text-neutral-700">
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+      <p class="mb-3 text-sm text-neutral-700">
         Delete <strong>{{ itemLabel }}</strong
         >? This cannot be undone.
+      </p>
+      <p
+        v-if="warning"
+        data-testid="delete-dependency-warning"
+        class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+      >
+        {{ warning }}
       </p>
       <div class="flex justify-end gap-3">
         <button

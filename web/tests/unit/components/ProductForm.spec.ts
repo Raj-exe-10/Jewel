@@ -23,11 +23,11 @@ vi.mock('firebase/auth', () => ({ onAuthStateChanged: vi.fn() }))
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const ProductForm = (await import('../../../src/components/admin/ProductForm.vue')).default
 
-const PhotoUploaderStub = {
-  name: 'PhotoUploader',
-  props: ['modelValue'],
+const ProductMediaUploaderStub = {
+  name: 'ProductMediaUploader',
+  props: ['modelValue', 'productId'],
   emits: ['update:modelValue'],
-  template: '<div data-testid="photo-uploader-stub" />',
+  template: '<div data-testid="media-uploader-stub" />',
 }
 
 const category: Category = { id: 'cat-necklace', name: 'Necklace', sortOrder: 0, createdAt: 0 }
@@ -42,7 +42,7 @@ describe('ProductForm', () => {
     const store = useCatalogueStore()
     store.$patch({ categories: [category] })
     const wrapper = mount(ProductForm, {
-      global: { stubs: { PhotoUploader: PhotoUploaderStub } },
+      global: { stubs: { ProductMediaUploader: ProductMediaUploaderStub } },
     })
     return { wrapper, store }
   }
@@ -62,7 +62,9 @@ describe('ProductForm', () => {
     await wrapper.get('[data-testid="product-name"]').setValue('Test Product')
     await wrapper.get('[data-testid="product-description"]').setValue('desc')
     await wrapper.get('[data-testid="product-price"]').setValue(-5)
-    await wrapper.findComponent(PhotoUploaderStub).vm.$emit('update:modelValue', ['https://example.com/a.jpg'])
+    await wrapper.findComponent(ProductMediaUploaderStub).vm.$emit('update:modelValue', [
+      { id: 'i1', kind: 'image', url: 'https://example.com/a.jpg', sortOrder: 0 },
+    ])
     await wrapper.get('form').trigger('submit.prevent')
 
     expect(addDocMock).not.toHaveBeenCalled()
@@ -76,7 +78,7 @@ describe('ProductForm', () => {
     await wrapper.get('form').trigger('submit.prevent')
 
     expect(addDocMock).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-testid="form-error"]').text()).toMatch(/photo/i)
+    expect(wrapper.get('[data-testid="form-error"]').text()).toMatch(/photo|video|media/i)
   })
 
   it('saves successfully once name, description, price, category, and a photo are all present', async () => {
@@ -84,7 +86,9 @@ describe('ProductForm', () => {
     await wrapper.get('[data-testid="product-name"]').setValue('Test Product')
     await wrapper.get('[data-testid="product-description"]').setValue('desc')
     await wrapper.get('[data-testid="product-price"]').setValue(1000)
-    await wrapper.findComponent(PhotoUploaderStub).vm.$emit('update:modelValue', ['https://example.com/a.jpg'])
+    await wrapper.findComponent(ProductMediaUploaderStub).vm.$emit('update:modelValue', [
+      { id: 'i1', kind: 'image', url: 'https://example.com/a.jpg', sortOrder: 0 },
+    ])
     await wrapper.get('form').trigger('submit.prevent')
 
     expect(addDocMock).toHaveBeenCalledTimes(1)
@@ -98,7 +102,9 @@ describe('ProductForm', () => {
     await wrapper.get('[data-testid="product-name"]').setValue('Test Product')
     await wrapper.get('[data-testid="product-description"]').setValue('desc')
     await wrapper.get('[data-testid="product-price"]').setValue(1000)
-    await wrapper.findComponent(PhotoUploaderStub).vm.$emit('update:modelValue', ['https://example.com/a.jpg'])
+    await wrapper.findComponent(ProductMediaUploaderStub).vm.$emit('update:modelValue', [
+      { id: 'i1', kind: 'image', url: 'https://example.com/a.jpg', sortOrder: 0 },
+    ])
     await wrapper.get('[data-testid="flag-founder"]').setValue(true)
     await wrapper.get('[data-testid="flag-bridal"]').setValue(true)
     await wrapper.get('form').trigger('submit.prevent')

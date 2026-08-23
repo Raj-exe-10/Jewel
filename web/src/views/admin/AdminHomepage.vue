@@ -7,15 +7,14 @@ import SectionEditor from '../../components/admin/SectionEditor.vue'
 import SectionList from '../../components/admin/SectionList.vue'
 import HomepageRenderer from '../../components/public/HomepageRenderer.vue'
 import { createSectionDraft, DEFAULT_HOMEPAGE_SECTIONS, toSectionInput } from '../../data/defaultSections'
+import { useBusinessStore } from '../../stores/business'
 import { useCatalogueStore } from '../../stores/catalogue'
 import { useHomepageStore, type DefaultLayoutSection } from '../../stores/homepage'
 import { SECTION_TYPE_LABELS, type HomepageSection, type SectionType } from '../../types/homepage'
 
-const businessPhoneE164 = import.meta.env.VITE_WHATSAPP_NUMBER as string
-const instagramHandle = import.meta.env.VITE_INSTAGRAM_HANDLE as string
-
 const homepage = useHomepageStore()
 const catalogue = useCatalogueStore()
+const business = useBusinessStore()
 
 const editing = ref<HomepageSection | null>(null)
 const pendingDelete = ref<HomepageSection | null>(null)
@@ -40,6 +39,7 @@ const sectionTypes = Object.keys(SECTION_TYPE_LABELS) as SectionType[]
 onMounted(() => {
   catalogue.subscribeToCatalogue()
   homepage.subscribeToSections()
+  business.subscribeToProfile()
 })
 
 const listSections = computed(() => homepage.orderedSections)
@@ -314,8 +314,8 @@ const layoutDialogConfirmLabel = computed(() => {
             <HomepageRenderer
               :key="previewKey"
               :sections="homepage.displaySections"
-              :business-phone-e164="businessPhoneE164"
-              :instagram-handle="instagramHandle"
+              :business-phone-e164="business.whatsappNumberE164"
+              :instagram-handle="business.instagramHandle"
               show-empty-placeholders
             />
           </div>

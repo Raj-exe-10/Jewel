@@ -1,8 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProductCard from '../../../src/components/public/ProductCard.vue'
 import type { Product } from '../../../src/types/catalogue'
+
+const memory = new Map<string, string>()
+vi.stubGlobal('localStorage', {
+  getItem: (key: string) => memory.get(key) ?? null,
+  setItem: (key: string, value: string) => {
+    memory.set(key, value)
+  },
+  removeItem: (key: string) => {
+    memory.delete(key)
+  },
+  clear: () => memory.clear(),
+})
 
 const product: Product = {
   id: 'p1',
@@ -26,8 +38,8 @@ const product: Product = {
 
 describe('ProductCard', () => {
   beforeEach(() => {
+    memory.clear()
     setActivePinia(createPinia())
-    localStorage.clear()
   })
 
   function mountCard() {
@@ -36,6 +48,14 @@ describe('ProductCard', () => {
         product,
         categoryName: 'Necklace',
         businessPhoneE164: '919999999999',
+      },
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : \'#\'"><slot /></a>',
+          },
+        },
       },
     })
   }
@@ -48,6 +68,19 @@ describe('ProductCard', () => {
     expect(wrapper.text()).toContain('Necklace')
     expect(wrapper.text()).toContain('5,000')
     expect(wrapper.text()).toContain('A lovely handcrafted necklace')
+  })
+
+  it('links the card media to the product detail page', () => {
+    const wrapper = mountCard()
+    expect(wrapper.get('[data-testid="product-detail-link"]').attributes('href')).toBe('/product/p1')
+  })
+
+  it('wraps name and description in the same detail link as the media', () => {
+    const wrapper = mountCard()
+    const link = wrapper.get('[data-testid="product-detail-link"]')
+    expect(link.text()).toContain('Kundan Choker Necklace')
+    expect(link.text()).toContain('A lovely handcrafted necklace')
+    expect(link.find('img').exists()).toBe(true)
   })
 
   it('the enquire link href includes the product name', () => {

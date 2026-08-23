@@ -5,6 +5,10 @@ import type { Product } from '../../../src/types/catalogue'
 
 vi.mock('../../../src/firebase/config', () => ({ db: {} }))
 vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ name: 'home', path: '/', params: {}, query: {} }),
+}))
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const BridalSpotlight = (await import('../../../src/components/public/BridalSpotlight.vue')).default
@@ -40,7 +44,7 @@ describe('BridalSpotlight', () => {
     localStorage.clear()
   })
 
-  it('renders only bridal products', () => {
+  it('renders the bridal banner card without a product carousel', () => {
     const store = useCatalogueStore()
     store.$patch({
       products: [
@@ -51,16 +55,19 @@ describe('BridalSpotlight', () => {
 
     const wrapper = mount(BridalSpotlight, { props: { businessPhoneE164: '919999999999' } })
 
-    expect(wrapper.findAll('[data-testid="product-card"]')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="bridal-banner"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="product-card"]')).toHaveLength(0)
+    expect(wrapper.text()).toContain('Curated Bridal Ensembles')
   })
 
-  it('renders nothing when there are no bridal products', () => {
+  it('still renders the banner when there are no bridal products', () => {
     const store = useCatalogueStore()
     store.$patch({ products: [makeProduct({ isBridal: false })] })
 
     const wrapper = mount(BridalSpotlight, { props: { businessPhoneE164: '919999999999' } })
 
-    expect(wrapper.find('section').exists()).toBe(false)
+    expect(wrapper.find('section').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="bridal-cta"]').exists()).toBe(true)
   })
 
   it('clicking the bridal CTA filters the catalogue to bridal products', async () => {

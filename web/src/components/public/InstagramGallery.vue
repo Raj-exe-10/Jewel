@@ -14,7 +14,7 @@ const handleLabel = computed(() => `@${props.instagramHandle.replace(/^@/, '')}`
 </script>
 
 <template>
-  <section :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 py-14">
+  <section :id="resolved.anchorId" class="mx-auto max-w-screen-2xl px-4 py-8">
     <SectionHeading :title="resolved.title" :subtitle="resolved.subtitle ?? handleLabel" :icon="resolved.icon" />
     <div class="mb-8 text-center">
       <a

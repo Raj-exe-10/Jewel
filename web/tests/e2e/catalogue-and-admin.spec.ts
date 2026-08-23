@@ -59,8 +59,8 @@ test.describe('Manager panel (US3)', () => {
     await page.getByTestId('product-name').fill(productName)
     await page.getByTestId('product-description').fill('Created by the Playwright smoke test.')
     await page.getByTestId('product-price').fill('4200')
-    await page.getByTestId('photo-input').setInputFiles(SAMPLE_PHOTO)
-    await expect(page.locator('img[alt="Product photo"]')).toBeVisible({ timeout: 15000 })
+    await page.getByTestId('media-image-input').setInputFiles(SAMPLE_PHOTO)
+    await expect(page.locator('img[alt="Product media"]').first()).toBeVisible({ timeout: 15000 })
     await page.getByRole('button', { name: 'Save Product' }).click()
 
     await expect(page.getByText(productName)).toBeVisible({ timeout: 15000 })

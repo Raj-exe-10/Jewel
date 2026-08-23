@@ -128,5 +128,28 @@ export const useHomepageStore = defineStore('homepage', {
       )
       await Promise.all(extras.map((section) => deleteDoc(doc(db, 'homepageSections', section.id))))
     },
+    async scrubProductFromSections(productId: string) {
+      const uid = auth.currentUser?.uid ?? 'unknown'
+      const now = Date.now()
+      const affected = this.sections.filter((section) => section.productIds?.includes(productId))
+      await Promise.all(
+        affected.map((section) =>
+          setDoc(
+            doc(db, 'homepageSections', section.id),
+            {
+              productIds: (section.productIds ?? []).filter((id) => id !== productId),
+              updatedAt: now,
+              updatedBy: uid,
+            },
+            { merge: true },
+          ),
+        ),
+      )
+      this.sections = this.sections.map((section) =>
+        section.productIds?.includes(productId)
+          ? { ...section, productIds: section.productIds.filter((id) => id !== productId) }
+          : section,
+      )
+    },
   },
 })

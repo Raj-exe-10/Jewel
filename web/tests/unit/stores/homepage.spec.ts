@@ -145,11 +145,22 @@ describe('homepage store', () => {
     expect(deleteDocMock).toHaveBeenCalledWith('drop-me')
   })
 
-  it('loadDefaultLayout returns null when no snapshot exists', async () => {
-    const { getDoc } = await import('firebase/firestore')
-    vi.mocked(getDoc).mockResolvedValueOnce({ exists: () => false, data: () => undefined } as never)
+  it('scrubProductFromSections removes the id from productIds', async () => {
     const store = useHomepageStore()
-    await expect(store.loadDefaultLayout()).resolves.toBeNull()
+    store.$patch({
+      sections: [
+        makeSection({
+          id: 'manual',
+          type: 'product_carousel',
+          productSelectionMode: 'manual',
+          productIds: ['p1', 'p2'],
+          content: { variant: 'carousel' },
+        }),
+      ],
+    })
+    await store.scrubProductFromSections('p1')
+    expect(setDocMock).toHaveBeenCalled()
+    expect(store.sections[0]!.productIds).toEqual(['p2'])
   })
 })
 

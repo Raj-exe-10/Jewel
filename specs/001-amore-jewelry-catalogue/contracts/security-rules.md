@@ -83,6 +83,14 @@ service firebase.storage {
                    && request.resource.contentType.matches('video/.*');
       allow delete: if request.auth != null;
     }
+
+    match /product-videos/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+                   && request.resource.size < 50 * 1024 * 1024
+                   && request.resource.contentType.matches('video/.*');
+      allow delete: if request.auth != null;
+    }
   }
 }
 ```
@@ -118,6 +126,9 @@ service firebase.storage {
 | 25 | Unauthenticated | read | `homepageConfig/{id}` | ALLOW |
 | 26 | Unauthenticated | write | `homepageConfig/{id}` | DENY |
 | 27 | Authenticated | write | `homepageConfig/{id}` | ALLOW |
+| 28 | Unauthenticated | write | `product-videos/**` | DENY |
+| 29 | Authenticated | write | `product-videos/**` with `contentType: video/mp4`, size < 50MB | ALLOW |
+| 30 | Authenticated | write | `product-videos/**` with `contentType: image/jpeg` | DENY |
 
 Every row above corresponds to one Vitest test using
 `@firebase/rules-unit-testing`'s `assertSucceeds`/`assertFails` against the

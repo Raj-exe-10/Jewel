@@ -259,13 +259,42 @@ describe('Firestore: homepageConfig', () => {
   })
 })
 
+describe('Storage: product-videos', () => {
+  it('row 28: unauthenticated write of product-videos is DENIED', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertFails(
+      uploadBytes(ref(unauth.storage(), 'product-videos/clip.mp4'), new Uint8Array([1, 2, 3]), {
+        contentType: 'video/mp4',
+      }),
+    )
+  })
+
+  it('row 29: authenticated write of a product video is ALLOWED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertSucceeds(
+      uploadBytes(ref(userA.storage(), 'product-videos/clip.mp4'), new Uint8Array([1, 2, 3]), {
+        contentType: 'video/mp4',
+      }),
+    )
+  })
+
+  it('row 30: authenticated write of a non-video to product-videos is DENIED', async () => {
+    const userA = testEnv.authenticatedContext('userA')
+    await assertFails(
+      uploadBytes(ref(userA.storage(), 'product-videos/clip.jpg'), new Uint8Array([1, 2, 3]), {
+        contentType: 'image/jpeg',
+      }),
+    )
+  })
+})
+
 describe('contract coverage', () => {
-  it('documents 27 rows in the security-rules contract', () => {
+  it('documents 30 rows in the security-rules contract', () => {
     const contract = readFileSync(
       resolve(__dirname, '../../../specs/001-amore-jewelry-catalogue/contracts/security-rules.md'),
       'utf8',
     )
     const rows = contract.match(/^\| \d+ \|/gm) ?? []
-    expect(rows).toHaveLength(27)
+    expect(rows).toHaveLength(30)
   })
 })

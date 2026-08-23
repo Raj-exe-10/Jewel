@@ -33,11 +33,15 @@ describe('ConfirmDeleteDialog', () => {
     expect(wrapper.emitted('confirm')).toBeUndefined()
   })
 
-  it('renders nothing interactive when closed', () => {
+  it('shows a dependency warning when provided', () => {
     const wrapper = mount(ConfirmDeleteDialog, {
-      props: { open: false, itemLabel: 'Kundan Choker Necklace' },
+      props: {
+        open: true,
+        itemLabel: 'Kundan Choker',
+        warning: 'Used on Founder picks.',
+      },
     })
 
-    expect(wrapper.find('[data-testid="confirm-delete"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="delete-dependency-warning"]').text()).toContain('Founder picks')
   })
 })

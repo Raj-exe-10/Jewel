@@ -3,6 +3,14 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Category, Collection, StyleTag } from '../../../src/types/catalogue'
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ path: '/' }),
+  RouterLink: {
+    props: ['to'],
+    template: '<a :href="typeof to === \'string\' ? to : to?.path ?? \'#\'"><slot /></a>',
+  },
+}))
 vi.mock('../../../src/firebase/config', () => ({ db: {} }))
 vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
 

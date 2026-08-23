@@ -17,7 +17,7 @@ const tiles = computed(() =>
 const slideCount = computed(() => tiles.value.length)
 
 const { emblaRef, scrollPrev, scrollNext } = useCarousel(
-  { align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
+  { loop: true, align: 'start', containScroll: 'trimSnaps', slidesToScroll: 1 },
   [],
   slideCount,
 )
@@ -29,7 +29,8 @@ function onTileClick() {
 </script>
 
 <template>
-  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="mx-auto max-w-6xl px-4 pt-14">
+  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="scroll-mt-28 bg-amore-theme/60 pt-8 pb-8 md:scroll-mt-32">
+    <div class="mx-auto max-w-screen-2xl px-4">
     <div class="relative mb-2">
       <SectionHeading
         :title="resolved.title"
@@ -58,7 +59,11 @@ function onTileClick() {
       </div>
     </div>
 
-    <div ref="emblaRef" class="overflow-hidden">
+    <div
+      id="shop-the-visuals-products"
+      ref="emblaRef"
+      class="scroll-mt-36 overflow-hidden md:scroll-mt-40"
+    >
       <div class="flex touch-pan-y">
         <button
           v-for="(tile, index) in tiles"
@@ -90,6 +95,7 @@ function onTileClick() {
           </span>
         </button>
       </div>
+    </div>
     </div>
   </section>
 </template>

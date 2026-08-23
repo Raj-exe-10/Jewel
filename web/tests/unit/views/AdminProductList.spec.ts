@@ -31,6 +31,7 @@ vi.mock('vue-router', () => ({
 const AdminProductList = (await import('../../../src/views/admin/AdminProductList.vue')).default
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const { useAuthStore } = await import('../../../src/stores/auth')
+const { useHomepageStore } = await import('../../../src/stores/homepage')
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -70,14 +71,20 @@ describe('AdminProductList', () => {
       categories: [{ id: 'cat-necklace', name: 'Necklace', sortOrder: 0, createdAt: 0 }],
     })
     catalogue.subscribeToCatalogue = vi.fn()
+    const homepage = useHomepageStore()
+    homepage.subscribeToSections = vi.fn()
+    homepage.scrubProductFromSections = vi.fn().mockResolvedValue(undefined)
+    homepage.$patch({ sections: [] })
   })
 
-  function mountPage() {
+  function mountPage(options?: { realConfirm?: boolean }) {
     return mount(AdminProductList, {
       global: {
         stubs: {
           AdminLayout: { template: '<div><slot /></div>' },
-          ConfirmDeleteDialog: true,
+          ConfirmDeleteDialog: options?.realConfirm
+            ? false
+            : true,
           ProductForm: {
             props: ['editing'],
             emits: ['saved'],
@@ -89,6 +96,32 @@ describe('AdminProductList', () => {
       attachTo: document.body,
     })
   }
+
+  it('warns about homepage dependencies before delete', async () => {
+    const homepage = useHomepageStore()
+    homepage.$patch({
+      sections: [
+        {
+          id: 's1',
+          type: 'product_carousel',
+          title: 'Hand picks',
+          anchorId: 'hp',
+          sortOrder: 0,
+          isVisible: true,
+          createdAt: 0,
+          updatedAt: 0,
+          updatedBy: 'u',
+          productSelectionMode: 'manual',
+          productIds: ['p1'],
+          content: { variant: 'carousel' },
+        },
+      ],
+    })
+    const wrapper = mountPage({ realConfirm: true })
+    await wrapper.get('[data-testid="delete-product-p1"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="delete-dependency-warning"]').text()).toMatch(/Hand picks/)
+  })
 
   it('opens the product form in a modal when Edit is clicked', async () => {
     const wrapper = mountPage()
