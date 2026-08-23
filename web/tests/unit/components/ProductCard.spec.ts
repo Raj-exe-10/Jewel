@@ -42,18 +42,20 @@ describe('ProductCard', () => {
     setActivePinia(createPinia())
   })
 
-  function mountCard() {
+  function mountCard(responsiveCompact = false, detailOrigin?: 'home' | 'collection') {
     return mount(ProductCard, {
       props: {
         product,
         categoryName: 'Necklace',
         businessPhoneE164: '919999999999',
+        responsiveCompact,
+        detailOrigin,
       },
       global: {
         stubs: {
           RouterLink: {
             props: ['to'],
-            template: '<a :href="typeof to === \'string\' ? to : \'#\'"><slot /></a>',
+            template: "<a :href=\"typeof to === 'string' ? to : '#'\"><slot /></a>",
           },
         },
       },
@@ -70,9 +72,45 @@ describe('ProductCard', () => {
     expect(wrapper.text()).toContain('A lovely handcrafted necklace')
   })
 
+  it('keeps the full mobile layout, becomes compact on tablet, and restores typography on desktop', () => {
+    const wrapper = mountCard(true)
+
+    const imageClasses = wrapper.get('img').classes()
+    expect(imageClasses).toContain('aspect-[3/4]')
+    expect(imageClasses).toContain('sm:aspect-square')
+
+    const contentClasses = wrapper
+      .get('[data-testid="product-detail-link"] > div:last-child')
+      .classes()
+    expect(contentClasses).toContain('p-4')
+    expect(contentClasses).toContain('sm:p-2')
+
+    const enquiryClasses = wrapper.get('[data-testid="whatsapp-link"]').classes()
+    expect(enquiryClasses).toContain('px-4')
+    expect(enquiryClasses).toContain('sm:px-2')
+
+    expect(
+      wrapper.get('[data-testid="product-detail-link"] > div:last-child > p').classes(),
+    ).toContain('lg:text-xs')
+    expect(wrapper.get('h3').classes()).toContain('lg:text-lg')
+    expect(wrapper.find('h3 + p').classes()).toContain('lg:text-sm')
+    expect(wrapper.find('h3 + p + p').classes()).toContain('lg:text-base')
+    expect(wrapper.get('[data-testid="whatsapp-link"]').classes()).toContain('lg:text-sm')
+  })
+
   it('links the card media to the product detail page', () => {
     const wrapper = mountCard()
-    expect(wrapper.get('[data-testid="product-detail-link"]').attributes('href')).toBe('/product/p1')
+    expect(wrapper.get('[data-testid="product-detail-link"]').attributes('href')).toBe(
+      '/product/p1',
+    )
+  })
+
+  it('includes the supplied source page in the product detail link', () => {
+    const wrapper = mountCard(false, 'home')
+
+    expect(wrapper.get('[data-testid="product-detail-link"]').attributes('href')).toBe(
+      '/product/p1?from=home',
+    )
   })
 
   it('wraps name and description in the same detail link as the media', () => {

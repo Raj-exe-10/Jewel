@@ -2,6 +2,8 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import type { ProductMediaItem } from '../../../src/lib/productMedia'
 
+const { autoplayMock } = vi.hoisted(() => ({ autoplayMock: vi.fn(() => ({ name: 'autoplay' })) }))
+
 vi.mock('embla-carousel', () => {
   const api = {
     on: vi.fn(),
@@ -18,10 +20,12 @@ vi.mock('embla-carousel', () => {
   return { default: vi.fn(() => api) }
 })
 vi.mock('embla-carousel-autoplay', () => ({
-  default: vi.fn(() => ({ name: 'autoplay' })),
+  default: autoplayMock,
 }))
 
-const ProductMediaCarousel = (await import('../../../src/components/public/ProductMediaCarousel.vue')).default
+const ProductMediaCarousel = (
+  await import('../../../src/components/public/ProductMediaCarousel.vue')
+).default
 
 const media: ProductMediaItem[] = [
   { id: 'i1', kind: 'image', url: 'https://example.com/a.jpg', sortOrder: 0 },
@@ -40,5 +44,6 @@ describe('ProductMediaCarousel', () => {
     expect(wrapper.get('[data-testid="product-media-prev"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="product-media-next"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="product-media-thumb"]')).toHaveLength(2)
+    expect(autoplayMock).not.toHaveBeenCalled()
   })
 })

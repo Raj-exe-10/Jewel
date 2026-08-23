@@ -75,13 +75,20 @@ describe('CatalogueGrid', () => {
         stubs: {
           RouterLink: {
             props: ['to'],
-            template: '<a :href="typeof to === \'string\' ? to : to?.path ?? \'#\'" v-bind="$attrs"><slot /></a>',
+            template:
+              '<a :href="typeof to === \'string\' ? to : to?.path ?? \'#\'" v-bind="$attrs"><slot /></a>',
           },
         },
       },
     })
 
     expect(wrapper.findAll('[data-testid="product-card"]')).toHaveLength(8)
+    const firstCard = wrapper.findAll('[data-testid="product-card"]')[0]
+    expect(firstCard.find('img').classes()).toContain('sm:aspect-square')
+    expect(firstCard.element.parentElement?.classList.contains('lg:flex-[0_0_22%]')).toBe(true)
+    expect(firstCard.get('[data-testid="product-detail-link"]').attributes('href')).toBe(
+      '/product/p9?from=home',
+    )
     const viewMore = wrapper.get('[data-testid="catalogue-view-more"]')
     expect(viewMore.attributes('href')).toBe('/collection')
   })

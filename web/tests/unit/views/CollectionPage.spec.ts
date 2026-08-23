@@ -14,13 +14,16 @@ vi.mock('vue-router', () => ({
 vi.mock('../../../src/firebase/config', () => ({ db: {}, auth: {} }))
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
-  onSnapshot: vi.fn(),
+  doc: vi.fn(),
+  onSnapshot: vi.fn(() => vi.fn()),
+  setDoc: vi.fn(),
 }))
 
 const CollectionPage = (await import('../../../src/views/CollectionPage.vue')).default
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const { useBusinessStore } = await import('../../../src/stores/business')
 const { useWishlistStore } = await import('../../../src/stores/wishlist')
+const { useCollectionPageStore } = await import('../../../src/stores/collectionPage')
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -76,15 +79,46 @@ describe('CollectionPage', () => {
           Header: true,
           Footer: true,
           FloatingWhatsAppButton: true,
-          RouterLink: true,
+          RouterLink: {
+            props: ['to'],
+            template: "<a :href=\"typeof to === 'string' ? to : '#'\"><slot /></a>",
+          },
         },
       },
     })
 
     expect(wrapper.get('[data-testid="collection-page"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="collection-filters"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="collection-carousel"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="collection-product-row"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="product-card"]').length).toBeGreaterThan(0)
+    expect(wrapper.get('[data-testid="product-detail-link"]').attributes('href')).toBe(
+      '/product/p1?from=collection',
+    )
     expect(wrapper.get('[data-testid="style-chip-style-antique"]').exists()).toBe(true)
+  })
+
+  it('starts a new carousel row after the configured number of products', () => {
+    const catalogue = useCatalogueStore()
+    catalogue.$patch({
+      products: Array.from({ length: 11 }, (_, index) =>
+        makeProduct({ id: `p${index + 1}`, createdAt: index + 1 }),
+      ),
+    })
+    useCollectionPageStore().$patch({ productsPerRow: 10 })
+
+    const wrapper = mount(CollectionPage, {
+      global: {
+        stubs: {
+          Header: true,
+          Footer: true,
+          FloatingWhatsAppButton: true,
+          RouterLink: true,
+        },
+      },
+    })
+
+    const rows = wrapper.findAll('[data-testid="collection-product-row"]')
+    expect(rows).toHaveLength(2)
+    expect(rows.map((row) => row.attributes('data-product-count'))).toEqual(['10', '1'])
   })
 })

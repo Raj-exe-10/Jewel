@@ -28,18 +28,20 @@ onMounted(() => {
 const product = computed(() => catalogue.products.find((item) => item.id === route.params.id))
 
 const categoryName = computed(
-  () => catalogue.categories.find((category) => category.id === product.value?.categoryId)?.name ?? '',
+  () =>
+    catalogue.categories.find((category) => category.id === product.value?.categoryId)?.name ?? '',
 )
 
 const gallery = computed(() => (product.value ? mediaFromProduct(product.value) : []))
 const enquiryLink = computed(() =>
   product.value ? buildProductEnquiryLink(product.value, business.whatsappNumberE164) : '#',
 )
-const isWishlisted = computed(() => (product.value ? wishlist.isWishlisted(product.value.id) : false))
-
-const others = computed(() =>
-  catalogue.products.filter((item) => item.id !== product.value?.id),
+const isWishlisted = computed(() =>
+  product.value ? wishlist.isWishlisted(product.value.id) : false,
 )
+const backTo = computed(() => (route.query.from === 'home' ? '/' : '/collection'))
+
+const others = computed(() => catalogue.products.filter((item) => item.id !== product.value?.id))
 
 const sameStyleProducts = computed(() => {
   const tags = product.value?.styleTagIds ?? []
@@ -75,7 +77,7 @@ useHead(
     <Header :business-phone-e164="business.whatsappNumberE164" />
     <main class="mx-auto max-w-screen-2xl px-4 py-6">
       <router-link
-        to="/collection"
+        :to="backTo"
         data-testid="product-back-link"
         class="mb-4 inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-amore-charcoal transition hover:text-amore-gold"
       >
@@ -155,7 +157,10 @@ useHead(
         />
       </template>
     </main>
-    <Footer :instagram-handle="business.instagramHandle" :business-phone-e164="business.whatsappNumberE164" />
+    <Footer
+      :instagram-handle="business.instagramHandle"
+      :business-phone-e164="business.whatsappNumberE164"
+    />
     <FloatingWhatsAppButton :business-phone-e164="business.whatsappNumberE164" />
   </div>
 </template>

@@ -7,13 +7,7 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import {
-  deleteDoc,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-} from 'firebase/firestore'
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { deleteObject, getBytes, ref, uploadBytes } from 'firebase/storage'
 
 // Contract under test: specs/001-amore-jewelry-catalogue/contracts/security-rules.md
@@ -147,7 +141,7 @@ describe('Storage: product-photos (rows 9-13)', () => {
 })
 
 describe('Firestore: staff mirror docs (rows 14-15)', () => {
-  it('row 14: a user cannot write another user\'s staff mirror doc', async () => {
+  it("row 14: a user cannot write another user's staff mirror doc", async () => {
     const userA = testEnv.authenticatedContext('userA')
     await assertFails(setDoc(doc(userA.firestore(), 'staff/userB'), { displayName: 'x' }))
   })
@@ -250,12 +244,34 @@ describe('Firestore: homepageConfig', () => {
 
   it('row 26: unauthenticated write is DENIED', async () => {
     const unauth = testEnv.unauthenticatedContext()
-    await assertFails(setDoc(doc(unauth.firestore(), 'homepageConfig/defaultLayout'), { sections: [] }))
+    await assertFails(
+      setDoc(doc(unauth.firestore(), 'homepageConfig/defaultLayout'), { sections: [] }),
+    )
   })
 
   it('row 27: authenticated write is ALLOWED', async () => {
     const userA = testEnv.authenticatedContext('userA')
-    await assertSucceeds(setDoc(doc(userA.firestore(), 'homepageConfig/defaultLayout'), { sections: [] }))
+    await assertSucceeds(
+      setDoc(doc(userA.firestore(), 'homepageConfig/defaultLayout'), { sections: [] }),
+    )
+  })
+})
+
+describe('Firestore: catalogueConfig', () => {
+  it('allows unauthenticated reads', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    await assertSucceeds(getDoc(doc(unauth.firestore(), 'catalogueConfig/collectionPage')))
+  })
+
+  it('denies unauthenticated writes and allows authenticated writes', async () => {
+    const unauth = testEnv.unauthenticatedContext()
+    const userA = testEnv.authenticatedContext('userA')
+    await assertFails(
+      setDoc(doc(unauth.firestore(), 'catalogueConfig/collectionPage'), { productsPerRow: 10 }),
+    )
+    await assertSucceeds(
+      setDoc(doc(userA.firestore(), 'catalogueConfig/collectionPage'), { productsPerRow: 10 }),
+    )
   })
 })
 

@@ -43,7 +43,11 @@ void emblaRef
         class="w-full cursor-pointer rounded-sm text-left transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amore-header"
         @click="onHeadingClick"
       >
-        <SectionHeading :title="resolved.title" :subtitle="resolved.subtitle" :icon="resolved.icon" />
+        <SectionHeading
+          :title="resolved.title"
+          :subtitle="resolved.subtitle"
+          :icon="resolved.icon"
+        />
       </button>
       <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
         <button
@@ -67,7 +71,11 @@ void emblaRef
       </div>
     </div>
 
-    <p v-if="previewProducts.length === 0" data-testid="empty-state" class="py-10 text-center text-neutral-500">
+    <p
+      v-if="previewProducts.length === 0"
+      data-testid="empty-state"
+      class="py-10 text-center text-neutral-500"
+    >
       No products available yet.
     </p>
 
@@ -77,12 +85,14 @@ void emblaRef
           <div
             v-for="product in previewProducts"
             :key="product.id"
-            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_40%] lg:flex-[0_0_28%]"
+            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_32%] lg:flex-[0_0_22%]"
           >
             <ProductCard
               :product="product"
               :category-name="categoryNameFor(product.categoryId)"
               :business-phone-e164="businessPhoneE164"
+              responsive-compact
+              detail-origin="home"
             />
           </div>
         </div>

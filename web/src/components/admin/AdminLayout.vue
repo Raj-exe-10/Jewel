@@ -10,6 +10,7 @@ const links = [
   { to: '/admin/homepage', label: 'Homepage', testid: 'nav-homepage' },
   { to: '/admin/products', label: 'Products', testid: 'nav-products' },
   { to: '/admin/taxonomies', label: 'Taxonomies', testid: 'nav-taxonomies' },
+  { to: '/admin/catalogue', label: 'Catalogue', testid: 'nav-catalogue' },
   { to: '/admin/business', label: 'Business', testid: 'nav-business' },
 ]
 
@@ -38,13 +39,17 @@ function isActive(path: string) {
             :to="link.to"
             :data-testid="link.testid"
             class="text-sm font-medium tracking-wide transition"
-            :class="isActive(link.to) ? 'text-amore-gold' : 'text-neutral-700 hover:text-amore-charcoal'"
+            :class="
+              isActive(link.to) ? 'text-amore-gold' : 'text-neutral-700 hover:text-amore-charcoal'
+            "
           >
             {{ link.label }}
           </router-link>
         </nav>
         <div class="flex items-center gap-3">
-          <p v-if="auth.currentUser" class="hidden text-xs text-neutral-500 sm:block">{{ auth.currentUser.email }}</p>
+          <p v-if="auth.currentUser" class="hidden text-xs text-neutral-500 sm:block">
+            {{ auth.currentUser.email }}
+          </p>
           <button
             type="button"
             data-testid="logout-button"

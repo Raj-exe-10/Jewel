@@ -1,51 +1,44 @@
 <script setup lang="ts">
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed, onMounted } from 'vue'
 import { useHead } from '@vueuse/head'
 import CollectionFilters from '../components/public/CollectionFilters.vue'
 import FloatingWhatsAppButton from '../components/public/FloatingWhatsAppButton.vue'
 import Footer from '../components/public/Footer.vue'
 import Header from '../components/public/Header.vue'
-import ProductCard from '../components/public/ProductCard.vue'
+import CollectionProductRow from '../components/public/CollectionProductRow.vue'
 import SearchBox from '../components/public/SearchBox.vue'
 import SectionHeading from '../components/public/SectionHeading.vue'
-import { useCarousel } from '../composables/useCarousel'
 import { useBusinessStore } from '../stores/business'
 import { useCatalogueStore } from '../stores/catalogue'
+import { useCollectionPageStore } from '../stores/collectionPage'
 import { useWishlistStore } from '../stores/wishlist'
-import type { Product } from '../types/catalogue'
 
 const catalogue = useCatalogueStore()
 const business = useBusinessStore()
 const wishlist = useWishlistStore()
+const collectionPage = useCollectionPageStore()
 
 onMounted(() => {
   catalogue.subscribeToCatalogue()
   business.subscribeToProfile()
   wishlist.load()
+  collectionPage.subscribeToConfig()
 })
 
 const hasResults = computed(() => catalogue.filteredProducts.length > 0)
 
-/** Duplicate short lists so Embla loop always has enough slides. */
-const slides = computed(() => {
-  const items = catalogue.filteredProducts
-  if (items.length === 0) return [] as { product: Product; key: string }[]
-  const source = items.length < 6 ? [...items, ...items] : items
-  return source.map((product, index) => ({ product, key: `${product.id}-${index}` }))
+const productRows = computed(() => {
+  const rows = []
+  const size = collectionPage.productsPerRow
+  for (let index = 0; index < catalogue.filteredProducts.length; index += size) {
+    rows.push(catalogue.filteredProducts.slice(index, index + size))
+  }
+  return rows
 })
-const slideCount = computed(() => slides.value.length)
 
 function categoryNameFor(categoryId: string): string {
   return catalogue.categories.find((c) => c.id === categoryId)?.name ?? ''
 }
-
-const { emblaRef, scrollPrev, scrollNext } = useCarousel(
-  { loop: true, align: 'start', slidesToScroll: 1 },
-  [],
-  slideCount,
-)
-void emblaRef
 
 useHead({
   title: 'Shop the Collection — Amore',
@@ -89,47 +82,21 @@ useHead({
           No products found. Try a different category, style, or search term.
         </p>
 
-        <div v-else class="relative">
-          <div class="mb-3 flex justify-end gap-2">
-            <button
-              type="button"
-              aria-label="Previous"
-              data-testid="collection-prev"
-              class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
-              @click="scrollPrev"
-            >
-              <ChevronLeftIcon class="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next"
-              data-testid="collection-next"
-              class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
-              @click="scrollNext"
-            >
-              <ChevronRightIcon class="h-4 w-4" />
-            </button>
-          </div>
-
-          <div ref="emblaRef" class="overflow-hidden" data-testid="collection-carousel">
-            <div class="flex">
-              <div
-                v-for="slide in slides"
-                :key="slide.key"
-                class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_40%] lg:flex-[0_0_28%]"
-              >
-                <ProductCard
-                  :product="slide.product"
-                  :category-name="categoryNameFor(slide.product.categoryId)"
-                  :business-phone-e164="business.whatsappNumberE164"
-                />
-              </div>
-            </div>
-          </div>
+        <div v-else class="space-y-8">
+          <CollectionProductRow
+            v-for="products in productRows"
+            :key="products.map((product) => product.id).join('-')"
+            :products="products"
+            :business-phone-e164="business.whatsappNumberE164"
+            :category-name-for="categoryNameFor"
+          />
         </div>
       </div>
     </main>
-    <Footer :instagram-handle="business.instagramHandle" :business-phone-e164="business.whatsappNumberE164" />
+    <Footer
+      :instagram-handle="business.instagramHandle"
+      :business-phone-e164="business.whatsappNumberE164"
+    />
     <FloatingWhatsAppButton :business-phone-e164="business.whatsappNumberE164" />
   </div>
 </template>

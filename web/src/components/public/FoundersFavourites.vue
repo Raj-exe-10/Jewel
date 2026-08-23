@@ -38,7 +38,11 @@ void emblaRef
 </script>
 
 <template>
-  <section v-if="favourites.length > 0" :id="resolved.anchorId" class="scroll-mt-28 bg-amore-theme/80 py-8 md:scroll-mt-32">
+  <section
+    v-if="favourites.length > 0"
+    :id="resolved.anchorId"
+    class="scroll-mt-28 bg-amore-theme/80 py-8 md:scroll-mt-32"
+  >
     <div class="mx-auto max-w-screen-2xl px-4">
       <div class="relative mb-2">
         <SectionHeading
@@ -77,12 +81,14 @@ void emblaRef
           <div
             v-for="slide in slides"
             :key="slide.key"
-            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_40%] lg:flex-[0_0_28%]"
+            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_32%] lg:flex-[0_0_22%]"
           >
             <ProductCard
               :product="slide.product"
               :category-name="categoryNameFor(slide.product.categoryId)"
               :business-phone-e164="businessPhoneE164"
+              responsive-compact
+              detail-origin="home"
             />
           </div>
         </div>

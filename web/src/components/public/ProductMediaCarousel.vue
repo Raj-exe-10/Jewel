@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
-import Autoplay from 'embla-carousel-autoplay'
 import { computed } from 'vue'
 import { useCarousel } from '../../composables/useCarousel'
 import type { ProductMediaItem } from '../../lib/productMedia'
@@ -15,7 +14,7 @@ const slideCount = computed(() => slides.value.length)
 
 const { emblaRef, selectedIndex, scrollPrev, scrollNext, scrollTo } = useCarousel(
   { loop: true, align: 'center', containScroll: 'trimSnaps' },
-  [Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })],
+  [],
   slideCount,
 )
 void emblaRef
@@ -31,8 +30,12 @@ function thumbSrc(item: ProductMediaItem): string {
     <div
       class="relative overflow-hidden rounded-sm border border-amore-gold/50 bg-gradient-to-b from-[#f7f0e4] to-amore-cream p-2 shadow-[inset_0_0_0_1px_rgba(176,141,87,0.25)]"
     >
-      <div class="pointer-events-none absolute inset-x-6 top-3 z-10 h-px bg-gradient-to-r from-transparent via-amore-gold/70 to-transparent" />
-      <div class="pointer-events-none absolute inset-x-6 bottom-3 z-10 h-px bg-gradient-to-r from-transparent via-amore-gold/70 to-transparent" />
+      <div
+        class="pointer-events-none absolute inset-x-6 top-3 z-10 h-px bg-gradient-to-r from-transparent via-amore-gold/70 to-transparent"
+      />
+      <div
+        class="pointer-events-none absolute inset-x-6 bottom-3 z-10 h-px bg-gradient-to-r from-transparent via-amore-gold/70 to-transparent"
+      />
 
       <div ref="emblaRef" class="overflow-hidden rounded-sm">
         <div class="flex">

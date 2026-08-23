@@ -3,8 +3,13 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Product } from '../../../src/types/catalogue'
 
+const routeState = vi.hoisted(() => ({
+  params: { id: 'p1' },
+  query: {} as Record<string, string>,
+}))
+
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { id: 'p1' } }),
+  useRoute: () => routeState,
   useRouter: () => ({ push: vi.fn() }),
   RouterLink: {
     props: ['to'],
@@ -51,6 +56,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 
 describe('ProductDetail', () => {
   beforeEach(() => {
+    routeState.query = {}
     setActivePinia(createPinia())
     const catalogue = useCatalogueStore()
     catalogue.$patch({
@@ -104,7 +110,8 @@ describe('ProductDetail', () => {
           SimilarProductsCarousel: true,
           RouterLink: {
             props: ['to'],
-            template: '<a :href="typeof to === \'string\' ? to : \'#\'" data-testid="product-back-link"><slot /></a>',
+            template:
+              '<a :href="typeof to === \'string\' ? to : \'#\'" data-testid="product-back-link"><slot /></a>',
           },
         },
       },
@@ -114,5 +121,27 @@ describe('ProductDetail', () => {
     expect(back.attributes('href')).toBe('/collection')
     expect(back.text()).toMatch(/Back/i)
     expect(back.text()).not.toMatch(/collection/i)
+  })
+
+  it('links back to the home page when opened from home', () => {
+    routeState.query = { from: 'home' }
+    const wrapper = mount(ProductDetail, {
+      global: {
+        stubs: {
+          Header: true,
+          Footer: true,
+          FloatingWhatsAppButton: true,
+          WhatsAppIcon: true,
+          SimilarProductsCarousel: true,
+          RouterLink: {
+            props: ['to'],
+            template:
+              '<a :href="typeof to === \'string\' ? to : \'#\'" data-testid="product-back-link"><slot /></a>',
+          },
+        },
+      },
+    })
+
+    expect(wrapper.get('[data-testid="product-back-link"]').attributes('href')).toBe('/')
   })
 })

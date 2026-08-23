@@ -47,6 +47,12 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/admin/catalogue',
+    name: 'admin-catalogue-settings',
+    component: () => import('../views/admin/AdminCatalogueSettings.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/admin',
     redirect: '/admin/homepage',
   },
@@ -56,7 +62,10 @@ export const routes: RouteRecordRaw[] = [
 const STICKY_HEADER_OFFSET = 112
 /** Extra gap for homepage product carousels — matches `scroll-mt-36` vs `scroll-mt-28`. */
 const PRODUCT_CAROUSEL_GAP = 24
-const PRODUCT_CAROUSEL_HASHES = new Set(['#shop-the-visuals-products', '#founders-favourites-products'])
+const PRODUCT_CAROUSEL_HASHES = new Set([
+  '#shop-the-visuals-products',
+  '#founders-favourites-products',
+])
 
 function scrollTopForHash(hash: string): number {
   return STICKY_HEADER_OFFSET + (PRODUCT_CAROUSEL_HASHES.has(hash) ? PRODUCT_CAROUSEL_GAP : 0)

@@ -7,7 +7,8 @@ vi.mock('../../../src/firebase/config', () => ({ db: {} }))
 vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
-const FoundersFavourites = (await import('../../../src/components/public/FoundersFavourites.vue')).default
+const FoundersFavourites = (await import('../../../src/components/public/FoundersFavourites.vue'))
+  .default
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -49,12 +50,27 @@ describe('FoundersFavourites', () => {
       ],
     })
 
-    const wrapper = mount(FoundersFavourites, { props: { businessPhoneE164: '919999999999' } })
+    const wrapper = mount(FoundersFavourites, {
+      props: { businessPhoneE164: '919999999999' },
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: "<a :href=\"typeof to === 'string' ? to : '#'\"><slot /></a>",
+          },
+        },
+      },
+    })
 
     const cards = wrapper.findAll('[data-testid="product-card"]')
     // Two favourites are duplicated (<6) so Embla can loop.
     expect(cards).toHaveLength(4)
     expect(wrapper.find('#founders-favourites-products').exists()).toBe(true)
+    expect(cards[0].find('img').classes()).toContain('sm:aspect-square')
+    expect(cards[0].element.parentElement?.classList.contains('lg:flex-[0_0_22%]')).toBe(true)
+    expect(cards[0].get('[data-testid="product-detail-link"]').attributes('href')).toBe(
+      '/product/p1?from=home',
+    )
   })
 
   it('renders nothing when there are no founder favourites', () => {
