@@ -15,7 +15,11 @@
     "test:rules": "firebase emulators:exec --only firestore,auth,storage --project demo-amore \"vitest run --config vitest.rules.config.ts\"",
     "test:e2e": "playwright test",
     "seed:emulator": "tsx scripts/seed-emulator.ts",
-    "emulators": "firebase emulators:start --only firestore,auth,storage --project demo-amore"
+    "emulators": "firebase emulators:start --only firestore,auth,storage --project demo-amore",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage:rules",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:soft": "firebase deploy --only firestore:rules,storage:rules,hosting",
+    "verify:soft": "node scripts/verify-soft-launch.mjs"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",

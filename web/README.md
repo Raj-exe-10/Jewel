@@ -96,26 +96,54 @@ web/
 └── pwa.config.ts                    # Shared PWA manifest (used by vite.config.ts and its own test)
 ```
 
-## Deploying to production (all free tier)
+## Soft-launch deploy (Firebase Hosting, free Spark URL)
 
-1. **Create a real Firebase project** at [console.firebase.google.com](https://console.firebase.google.com)
-   (Spark/free plan). Enable Firestore, Storage, and Email/Password Auth.
-2. Copy `.firebaserc.example` to `.firebaserc` and set your real project ID.
-3. Deploy security rules: `npx firebase deploy --only firestore:rules,storage:rules`.
-4. Create staff accounts for the owner/manager in the Firebase Auth console
-   (Authentication → Users → Add user).
-5. Get your web app config from Project Settings → General → Your apps, and
-   set the real `VITE_FIREBASE_*` values (plus `VITE_USE_EMULATOR=false`) as
-   environment variables in your hosting provider.
-6. **Deploy the frontend** to [Netlify](https://netlify.com) or
-   [Vercel](https://vercel.com) (both have generous free tiers):
+Preferred path for a demo URL (`https://<project-id>.web.app`) with no custom
+domain. Stay on the **Spark** plan — do not upgrade to Blaze.
+
+1. **Firebase Console** (existing business project): enable Email/Password Auth,
+   Firestore, and Storage; confirm a Web app exists under Project settings →
+   Your apps. Stay on Spark.
+2. **CLI login** (once per machine):
+   ```bash
+   npx firebase login
+   ```
+3. Copy `.firebaserc.example` to `.firebaserc` and set `"default"` to your real
+   project ID.
+4. Copy `.env.production.example` to `.env.production.local` and fill real
+   `VITE_FIREBASE_*` values from the Web app config. Set
+   `VITE_USE_EMULATOR=false`. Soft-launch WhatsApp/Instagram placeholders are OK.
+5. Create at least one staff user: Authentication → Users → Add user.
+6. Build and deploy (from `web/`):
+   ```bash
+   npm install
+   npm run build
+   npm run deploy:soft
+   ```
+   Or step-wise: `npm run deploy:rules` then `npm run deploy:hosting`.
+7. Open `https://<project-id>.web.app` and `/admin/login`. Add a few demo
+   products/categories via the manager UI (do **not** run `seed:emulator`
+   against production).
+8. Smoke-check the live URL:
+   ```bash
+   node scripts/verify-soft-launch.mjs https://<project-id>.web.app
+   ```
+   Then manually verify WhatsApp enquire, admin→public sync, PWA install, and
+   that Usage stays within Spark.
+
+Regenerate app icons if you change the brand mark: replace
+`icon-source/master.png` and run `node scripts/generate-icons.mjs`.
+
+### Alternative: Netlify / Vercel free hosting
+
+If you prefer a `*.netlify.app` / `*.vercel.app` URL instead of Firebase Hosting:
+
+1. Still deploy rules with `npm run deploy:rules` and create Auth users as above.
+2. Connect the `web/` repo to Netlify or Vercel:
    - Build command: `npm run build`
-   - Publish/output directory: `dist`
-   - Set the environment variables from step 5 in the hosting dashboard.
-7. Add real product photos/categories and homepage sections through `/admin/login`
-   once deployed — the seed script is for local development only.
-8. Regenerate app icons if you change the brand mark: replace
-   `icon-source/master.png` and run `node scripts/generate-icons.mjs`.
+   - Publish directory: `dist`
+   - Set the same `VITE_*` vars from `.env.production.example` in the host dashboard
+     (`VITE_USE_EMULATOR=false`).
 
 ## Notes
 

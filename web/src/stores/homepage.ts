@@ -85,10 +85,11 @@ export const useHomepageStore = defineStore('homepage', {
         ),
       )
     },
-    async saveDefaultLayout(sections: HomepageSection[] = this.sections) {
+    async saveDefaultLayout(sections?: HomepageSection[]) {
+      const list = sections ?? this.sections
       const uid = auth.currentUser?.uid ?? 'unknown'
       const now = Date.now()
-      const snapshot: DefaultLayoutSection[] = sections.map((section, index) => ({
+      const snapshot: DefaultLayoutSection[] = list.map((section, index) => ({
         ...toFirestoreSection(section),
         id: section.id,
         sortOrder: index,

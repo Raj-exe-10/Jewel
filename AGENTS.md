@@ -1,4 +1,4 @@
-# Repository skills
+ # Repository skills
 
 Project-maintained skills live in `.cursor/skills/`. Treat each directory containing a
 `SKILL.md` as an available repository skill, regardless of the `.cursor` directory
