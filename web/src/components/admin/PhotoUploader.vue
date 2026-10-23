@@ -2,8 +2,7 @@
 import { PaperClipIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
 import { useImageCompression } from '../../composables/useImageCompression'
-import { storage } from '../../firebase/config'
-import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
+import { uploadPublicFile } from '../../supabase/storage'
 
 const props = withDefaults(defineProps<{ modelValue: string[]; folder?: string; alt?: string }>(), {
   folder: 'product-photos',
@@ -20,6 +19,11 @@ async function onFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files ?? [])
   if (files.length === 0) return
+  if (files.some((file) => !file.type.startsWith('image/'))) {
+    uploadError.value = 'Please choose image files only (JPEG, PNG, WebP, GIF, or AVIF).'
+    input.value = ''
+    return
+  }
 
   isUploading.value = true
   uploadError.value = null
@@ -27,10 +31,8 @@ async function onFilesSelected(event: Event) {
     const uploadedUrls: string[] = []
     for (const file of files) {
       const compressed = await compress(file)
-      const path = `${props.folder}/${Date.now()}-${file.name}`
-      const ref = storageRef(storage, path)
-      await uploadBytes(ref, compressed, { contentType: compressed.type })
-      uploadedUrls.push(await getDownloadURL(ref))
+      const fileName = `${Date.now()}-${file.name}`
+      uploadedUrls.push(await uploadPublicFile(props.folder, fileName, compressed, compressed.type))
     }
     emit('update:modelValue', [...props.modelValue, ...uploadedUrls])
   } catch {

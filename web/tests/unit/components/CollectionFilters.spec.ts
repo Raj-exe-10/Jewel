@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {} }))
-vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
+
+
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const CollectionFilters = (await import('../../../src/components/public/CollectionFilters.vue')).default
@@ -42,7 +42,7 @@ describe('CollectionFilters', () => {
     expect(wrapper.get('[data-testid="filter-chip-cat-1"]').attributes('aria-pressed')).toBe('false')
   })
 
-  it('selecting a category chip replaces prior search and highlights only that chip', async () => {
+  it('selecting a category chip clears soft search highlight and highlights only that chip', async () => {
     const store = useCatalogueStore()
     store.$patch({ filters: { ...store.filters, searchTerm: 'ring' } })
     const wrapper = mount(CollectionFilters)
@@ -55,5 +55,36 @@ describe('CollectionFilters', () => {
     expect(store.filters.categoryId).toBe('cat-bangles')
     expect(wrapper.get('[data-testid="filter-chip-cat-bangles"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="filter-chip-cat-rings"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('keeps an active style filter when a category chip is selected (AND filters)', async () => {
+    const store = useCatalogueStore()
+    store.$patch({
+      filters: {
+        ...store.filters,
+        styleTagId: 'tag-1',
+        categoryId: null,
+        searchTerm: '',
+      },
+    })
+    const wrapper = mount(CollectionFilters)
+
+    await wrapper.get('[data-testid="filter-chip-cat-bangles"]').trigger('click')
+
+    expect(store.filters.categoryId).toBe('cat-bangles')
+    expect(store.filters.styleTagId).toBe('tag-1')
+    expect(wrapper.get('[data-testid="style-chip-tag-1"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="filter-chip-cat-bangles"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('clears bridal when a collection chip is selected', async () => {
+    const store = useCatalogueStore()
+    store.$patch({ filters: { ...store.filters, isBridal: true } })
+    const wrapper = mount(CollectionFilters)
+
+    await wrapper.get('[data-testid="collection-chip-col-1"]').trigger('click')
+
+    expect(store.filters.collectionId).toBe('col-1')
+    expect(store.filters.isBridal).toBeNull()
   })
 })

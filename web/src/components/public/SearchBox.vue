@@ -48,6 +48,8 @@ function refreshHistory() {
 
 function onInput(event: Event) {
   query.value = (event.target as HTMLInputElement).value
+  // Live-filter the grid while typing; keep other chip filters (AND).
+  catalogue.setFilters({ searchTerm: query.value })
 }
 
 function onFocus() {
@@ -59,7 +61,7 @@ function submitSearch(rawTerm?: string) {
   const term = (rawTerm ?? query.value).trim()
   if (!term) return
   history.value = pushSearchHistory(term)
-  catalogue.replaceFilters({ searchTerm: term })
+  catalogue.setFilters({ searchTerm: term })
   query.value = term
   isFocused.value = false
   nav.scrollToCollectionProducts()
@@ -76,17 +78,18 @@ function selectSuggestion(suggestion: SearchSuggestion) {
     return
   }
 
-  const label = suggestion.label
-  history.value = pushSearchHistory(label)
-  query.value = label
+  history.value = pushSearchHistory(suggestion.label)
+  query.value = ''
   isFocused.value = false
 
+  // Apply taxonomy as a chip filter only — do not AND the label as free-text search
+  // (that emptied the grid when the label never appears in product names).
   if (suggestion.kind === 'category') {
-    catalogue.replaceFilters({ categoryId: suggestion.id, searchTerm: label })
+    catalogue.setFilters({ categoryId: suggestion.id, searchTerm: '' })
   } else if (suggestion.kind === 'collection') {
-    catalogue.replaceFilters({ collectionId: suggestion.id, searchTerm: label })
+    catalogue.setFilters({ collectionId: suggestion.id, isBridal: null, searchTerm: '' })
   } else {
-    catalogue.replaceFilters({ styleTagId: suggestion.id, searchTerm: label })
+    catalogue.setFilters({ styleTagId: suggestion.id, searchTerm: '' })
   }
   nav.scrollToCollectionProducts()
 }

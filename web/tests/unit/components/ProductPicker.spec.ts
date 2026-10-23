@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Product } from '../../../src/types/catalogue'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {} }))
-vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
+
+
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const ProductPicker = (await import('../../../src/components/admin/ProductPicker.vue')).default

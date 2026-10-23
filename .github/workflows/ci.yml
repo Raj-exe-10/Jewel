@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  rls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase
+        run: npx supabase start
+      - name: Capture keys
+        id: supabase
+        run: |
+          echo "url=$(npx supabase status -o env | sed -n 's/API_URL=//p')" >> "$GITHUB_OUTPUT"
+          echo "anon=$(npx supabase status -o env | sed -n 's/ANON_KEY=//p')" >> "$GITHUB_OUTPUT"
+          echo "service=$(npx supabase status -o env | sed -n 's/SERVICE_ROLE_KEY=//p')" >> "$GITHUB_OUTPUT"
+      - name: Seed staff users
+        env:
+          VITE_SUPABASE_URL: ${{ steps.supabase.outputs.url }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service }}
+        run: npm run seed:local
+      - name: RLS / API tests
+        env:
+          VITE_SUPABASE_URL: ${{ steps.supabase.outputs.url }}
+          VITE_SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.anon }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service }}
+        run: npm run test:rls
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npx supabase start
+      - name: Capture keys
+        id: supabase
+        run: |
+          echo "url=$(npx supabase status -o env | sed -n 's/API_URL=//p')" >> "$GITHUB_OUTPUT"
+          echo "anon=$(npx supabase status -o env | sed -n 's/ANON_KEY=//p')" >> "$GITHUB_OUTPUT"
+          echo "service=$(npx supabase status -o env | sed -n 's/SERVICE_ROLE_KEY=//p')" >> "$GITHUB_OUTPUT"
+      - name: Seed
+        env:
+          VITE_SUPABASE_URL: ${{ steps.supabase.outputs.url }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service }}
+        run: npm run seed:local
+      - name: Build env for Vite
+        run: |
+          cat > .env <<EOF
+          VITE_SUPABASE_URL=${{ steps.supabase.outputs.url }}
+          VITE_SUPABASE_ANON_KEY=${{ steps.supabase.outputs.anon }}
+          VITE_WHATSAPP_NUMBER=919999999999
+          VITE_INSTAGRAM_HANDLE=amore.jewelry
+          EOF
+      - name: Start Vite
+        run: npm run dev -- --host 127.0.0.1 --port 5173 &
+      - name: Wait for app
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5173 >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Playwright
+        run: npm run test:e2e

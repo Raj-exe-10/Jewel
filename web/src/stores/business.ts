@@ -1,6 +1,5 @@
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { defineStore } from 'pinia'
-import { auth, db } from '../firebase/config'
+import { getCurrentUid, supabase } from '../supabase/client'
 
 export interface BusinessProfile {
   whatsappNumberE164: string
@@ -12,7 +11,7 @@ export interface BusinessProfile {
 interface BusinessState {
   profile: BusinessProfile | null
   loaded: boolean
-  unsubscribers: Array<() => void>
+  channelName: string | null
 }
 
 function envFallback(): BusinessProfile {
@@ -24,11 +23,20 @@ function envFallback(): BusinessProfile {
   }
 }
 
+function profileFromPayload(payload: Partial<BusinessProfile> | null | undefined): BusinessProfile {
+  return {
+    whatsappNumberE164: String(payload?.whatsappNumberE164 ?? ''),
+    instagramHandle: String(payload?.instagramHandle ?? ''),
+    address: String(payload?.address ?? ''),
+    mapUrl: String(payload?.mapUrl ?? ''),
+  }
+}
+
 export const useBusinessStore = defineStore('business', {
   state: (): BusinessState => ({
     profile: null,
     loaded: false,
-    unsubscribers: [],
+    channelName: null,
   }),
   getters: {
     whatsappNumberE164(state): string {
@@ -45,41 +53,64 @@ export const useBusinessStore = defineStore('business', {
     },
   },
   actions: {
+    async refreshProfile() {
+      const { data, error } = await supabase
+        .from('homepage_config')
+        .select('payload')
+        .eq('id', 'business_profile')
+        .maybeSingle()
+      if (error) throw error
+      if (!data) {
+        this.profile = null
+        this.loaded = true
+        return
+      }
+      this.profile = profileFromPayload(data.payload as Partial<BusinessProfile>)
+      this.loaded = true
+    },
+
     subscribeToProfile() {
-      const unsub = onSnapshot(doc(db, 'homepageConfig', 'businessProfile'), (snapshot) => {
-        if (!snapshot.exists()) {
-          this.profile = null
-          this.loaded = true
-          return
-        }
-        const data = snapshot.data() as Partial<BusinessProfile>
-        this.profile = {
-          whatsappNumberE164: String(data.whatsappNumberE164 ?? ''),
-          instagramHandle: String(data.instagramHandle ?? ''),
-          address: String(data.address ?? ''),
-          mapUrl: String(data.mapUrl ?? ''),
-        }
+      void this.refreshProfile().catch(() => {
         this.loaded = true
       })
-      this.unsubscribers = [unsub]
+      if (this.channelName) return
+      this.channelName = 'business-profile'
+      supabase
+        .channel(this.channelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'homepage_config', filter: 'id=eq.business_profile' },
+          () => {
+            void this.refreshProfile()
+          },
+        )
+        .subscribe()
     },
+
+
     unsubscribeAll() {
-      this.unsubscribers.forEach((unsub) => unsub())
-      this.unsubscribers = []
+      if (!this.channelName) return
+      for (const channel of supabase.getChannels()) {
+        if (channel.topic.includes(this.channelName)) void supabase.removeChannel(channel)
+      }
+      this.channelName = null
     },
+
     async saveProfile(input: BusinessProfile) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const payload: BusinessProfile = {
         whatsappNumberE164: input.whatsappNumberE164.trim(),
         instagramHandle: input.instagramHandle.trim().replace(/^@/, ''),
         address: input.address.trim(),
         mapUrl: input.mapUrl.trim(),
       }
-      await setDoc(
-        doc(db, 'homepageConfig', 'businessProfile'),
-        { ...payload, updatedAt: Date.now(), updatedBy: uid },
-        { merge: true },
-      )
+      const { error } = await supabase.from('homepage_config').upsert({
+        id: 'business_profile',
+        payload,
+        updated_at: Date.now(),
+        updated_by: uid,
+      })
+      if (error) throw error
       this.profile = payload
       this.loaded = true
     },

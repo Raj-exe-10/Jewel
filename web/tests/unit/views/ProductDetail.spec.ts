@@ -1,27 +1,72 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('../../../src/supabase/client', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: vi.fn(),
+      signOut: vi.fn(),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      upsert: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
+    storage: {
+      from: vi.fn(() => ({
+        upload: vi.fn().mockResolvedValue({ error: null }),
+        getPublicUrl: vi.fn(() => ({ data: { publicUrl: 'https://example.com/file' } })),
+        remove: vi.fn().mockResolvedValue({ error: null }),
+      })),
+    },
+  },
+  getCurrentUid: vi.fn().mockResolvedValue('staff-1'),
+}))
+
+vi.mock('../../../src/supabase/storage', () => ({
+  uploadPublicFile: vi.fn().mockResolvedValue('https://example.com/file'),
+  deletePublicUrl: vi.fn().mockResolvedValue(undefined),
+  isManagedStorageUrl: vi.fn().mockReturnValue(true),
+  splitFolder: vi.fn((folder) => {
+    const parts = String(folder).split('/').filter(Boolean)
+    return { bucket: parts[0] ?? 'product-photos', prefix: parts.slice(1).join('/') }
+  }),
+  publicObjectUrl: vi.fn(() => 'https://example.com/file'),
+  parsePublicUrl: vi.fn(),
+}))
+
 import type { Product } from '../../../src/types/catalogue'
 
-const routeState = vi.hoisted(() => ({
-  params: { id: 'p1' },
-  query: {} as Record<string, string>,
+const { routeState, backMock, pushMock } = vi.hoisted(() => ({
+  routeState: {
+    params: { id: 'p1' },
+    query: {} as Record<string, string>,
+  },
+  backMock: vi.fn(),
+  pushMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => routeState,
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: pushMock, back: backMock }),
   RouterLink: {
     props: ['to'],
     template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
   },
 }))
-vi.mock('../../../src/firebase/config', () => ({ db: {}, auth: {} }))
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  onSnapshot: vi.fn(),
-}))
-
 const ProductDetail = (await import('../../../src/views/ProductDetail.vue')).default
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const { useBusinessStore } = await import('../../../src/stores/business')
@@ -56,7 +101,12 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 
 describe('ProductDetail', () => {
   beforeEach(() => {
+    routeState.params = { id: 'p1' }
     routeState.query = {}
+    backMock.mockReset()
+    pushMock.mockReset()
+    // Simulate a deep-link open (no prior SPA history entry).
+    vi.stubGlobal('history', { ...window.history, state: { back: null, current: '/', forward: null } })
     setActivePinia(createPinia())
     const catalogue = useCatalogueStore()
     catalogue.$patch({
@@ -99,7 +149,7 @@ describe('ProductDetail', () => {
     expect(wrapper.find('video').exists()).toBe(true)
   })
 
-  it('links back to the collection page with Back label', () => {
+  it('falls back to collection when Back is used without prior history', async () => {
     const wrapper = mount(ProductDetail, {
       global: {
         stubs: {
@@ -108,22 +158,18 @@ describe('ProductDetail', () => {
           FloatingWhatsAppButton: true,
           WhatsAppIcon: true,
           SimilarProductsCarousel: true,
-          RouterLink: {
-            props: ['to'],
-            template:
-              '<a :href="typeof to === \'string\' ? to : \'#\'" data-testid="product-back-link"><slot /></a>',
-          },
         },
       },
     })
 
     const back = wrapper.get('[data-testid="product-back-link"]')
-    expect(back.attributes('href')).toBe('/collection')
     expect(back.text()).toMatch(/Back/i)
-    expect(back.text()).not.toMatch(/collection/i)
+    await back.trigger('click')
+    expect(backMock).not.toHaveBeenCalled()
+    expect(pushMock).toHaveBeenCalledWith('/collection')
   })
 
-  it('links back to the home page when opened from home', () => {
+  it('falls back to home when opened from home without prior history', async () => {
     routeState.query = { from: 'home' }
     const wrapper = mount(ProductDetail, {
       global: {
@@ -133,15 +179,50 @@ describe('ProductDetail', () => {
           FloatingWhatsAppButton: true,
           WhatsAppIcon: true,
           SimilarProductsCarousel: true,
-          RouterLink: {
-            props: ['to'],
-            template:
-              '<a :href="typeof to === \'string\' ? to : \'#\'" data-testid="product-back-link"><slot /></a>',
-          },
         },
       },
     })
 
-    expect(wrapper.get('[data-testid="product-back-link"]').attributes('href')).toBe('/')
+    await wrapper.get('[data-testid="product-back-link"]').trigger('click')
+    expect(pushMock).toHaveBeenCalledWith('/')
+  })
+
+  it('UI-NEG-07: shows unavailable state for a missing product id', () => {
+    routeState.params = { id: 'not-a-real-id' }
+    const wrapper = mount(ProductDetail, {
+      global: {
+        stubs: {
+          Header: true,
+          Footer: true,
+          FloatingWhatsAppButton: true,
+          WhatsAppIcon: true,
+          SimilarProductsCarousel: true,
+        },
+      },
+    })
+    expect(wrapper.find('[data-testid="product-detail"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="product-unavailable"]').text()).toMatch(/no longer available/i)
+  })
+
+  it('uses router.back when SPA history exists so browser Back stays coherent', async () => {
+    vi.stubGlobal('history', {
+      ...window.history,
+      state: { back: '/', current: '/product/p1', forward: null, position: 1 },
+    })
+    const wrapper = mount(ProductDetail, {
+      global: {
+        stubs: {
+          Header: true,
+          Footer: true,
+          FloatingWhatsAppButton: true,
+          WhatsAppIcon: true,
+          SimilarProductsCarousel: true,
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="product-back-link"]').trigger('click')
+    expect(backMock).toHaveBeenCalled()
+    expect(pushMock).not.toHaveBeenCalled()
   })
 })

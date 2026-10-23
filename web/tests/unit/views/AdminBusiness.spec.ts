@@ -2,16 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {}, auth: { currentUser: { uid: 'staff-1' } } }))
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
-  setDoc: vi.fn(),
-  onSnapshot: vi.fn(),
-  addDoc: vi.fn(),
-  deleteDoc: vi.fn(),
-  getDoc: vi.fn(),
-}))
+
+
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),
   useRoute: () => ({ path: '/admin/business' }),

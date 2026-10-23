@@ -32,20 +32,6 @@ function isActive(path: string) {
           <p class="font-display text-2xl text-amore-gold">Amore</p>
           <p class="text-[10px] uppercase tracking-[0.3em] text-neutral-500">Manager</p>
         </div>
-        <nav class="hidden items-center gap-6 sm:flex">
-          <router-link
-            v-for="link in links"
-            :key="link.to"
-            :to="link.to"
-            :data-testid="link.testid"
-            class="text-sm font-medium tracking-wide transition"
-            :class="
-              isActive(link.to) ? 'text-amore-gold' : 'text-neutral-700 hover:text-amore-charcoal'
-            "
-          >
-            {{ link.label }}
-          </router-link>
-        </nav>
         <div class="flex items-center gap-3">
           <p v-if="auth.currentUser" class="hidden text-xs text-neutral-500 sm:block">
             {{ auth.currentUser.email }}
@@ -60,14 +46,15 @@ function isActive(path: string) {
           </button>
         </div>
       </div>
-      <nav class="flex gap-4 overflow-x-auto border-t border-neutral-100 px-4 py-2 sm:hidden">
+      <!-- Single always-visible nav (avoids hidden sm:flex testid / breakpoint flakes in E2E). -->
+      <nav class="flex gap-4 overflow-x-auto border-t border-neutral-100 px-4 py-2">
         <router-link
           v-for="link in links"
           :key="link.to"
           :to="link.to"
-          :data-testid="`${link.testid}-mobile`"
-          class="whitespace-nowrap text-sm font-medium"
-          :class="isActive(link.to) ? 'text-amore-gold' : 'text-neutral-700'"
+          :data-testid="link.testid"
+          class="whitespace-nowrap text-sm font-medium tracking-wide transition"
+          :class="isActive(link.to) ? 'text-amore-gold' : 'text-neutral-700 hover:text-amore-charcoal'"
         >
           {{ link.label }}
         </router-link>

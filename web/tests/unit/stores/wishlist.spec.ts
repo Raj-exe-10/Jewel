@@ -48,7 +48,7 @@ describe('wishlist store (FR-009: session/device-local, no account)', () => {
   })
 
   it('never makes a network call and has no account/server dependency', () => {
-    // Contract check: the module must not import firebase at all.
+    // Contract check: wishlist is local-only (no backend dependency).
     const store = useWishlistStore()
     expect(Object.keys(store.$state)).toEqual(['productIds'])
   })

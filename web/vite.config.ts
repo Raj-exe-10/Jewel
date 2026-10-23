@@ -19,17 +19,17 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         runtimeCaching: [
           {
-            // Firestore/Storage: network-first so managers' catalogue edits
+            // Supabase API/Storage: network-first so managers' catalogue edits
             // show up as soon as there's connectivity, falling back to the
             // last-seen catalogue when offline (FR-024/FR-027).
             urlPattern: ({ url }) =>
-              url.hostname.includes('firestore.googleapis.com') ||
-              url.hostname.includes('firebasestorage.googleapis.com') ||
+              url.hostname.includes('supabase.co') ||
+              url.hostname.includes('supabase.in') ||
               url.hostname === 'localhost' ||
               url.hostname === '127.0.0.1',
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'amore-firebase-cache',
+              cacheName: 'amore-supabase-cache',
               networkTimeoutSeconds: 5,
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
               cacheableResponse: { statuses: [0, 200] },

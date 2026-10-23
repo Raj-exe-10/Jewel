@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { PaperClipIcon } from '@heroicons/vue/24/outline'
 import { reactive, ref } from 'vue'
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
-import { storage } from '../../firebase/config'
+import { deletePublicUrl, isManagedStorageUrl, uploadPublicFile } from '../../supabase/storage'
 import type { SectionVideo } from '../../types/homepage'
 import PhotoUploader from './PhotoUploader.vue'
 
@@ -25,14 +24,18 @@ async function onFilesSelected(event: Event) {
     const uploaded: SectionVideo[] = []
     for (const [offset, file] of files.entries()) {
       const id = `${Date.now()}-${offset}`
-      const path = `section-videos/${props.sectionId}/${id}-${file.name}`
-      const fileRef = storageRef(storage, path)
-      await uploadBytes(fileRef, file, { contentType: file.type || 'video/mp4' })
+      const fileName = `${props.sectionId}/${id}-${file.name}`
+      const videoUrl = await uploadPublicFile(
+        'section-videos',
+        fileName,
+        file,
+        file.type || 'video/mp4',
+      )
       uploaded.push({
         id,
         label: file.name.replace(/\.[^.]+$/, ''),
         posterUrl: '',
-        videoUrl: await getDownloadURL(fileRef),
+        videoUrl,
         sortOrder: props.modelValue.length + offset,
       })
     }
@@ -61,11 +64,11 @@ function setPoster(id: string, urls: string[]) {
 
 async function removeVideo(video: SectionVideo) {
   try {
-    if (video.videoUrl.includes('firebasestorage') || video.videoUrl.includes('127.0.0.1')) {
-      await deleteObject(storageRef(storage, video.videoUrl))
+    if (isManagedStorageUrl(video.videoUrl)) {
+      await deletePublicUrl(video.videoUrl)
     }
   } catch {
-    // Best-effort cleanup; the Firestore document still drops the entry.
+    // Best-effort cleanup; the section document still drops the entry.
   }
   delete loadErrors[video.id]
   emit(

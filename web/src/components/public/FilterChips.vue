@@ -7,7 +7,7 @@ function toggleCategory(categoryId: string) {
   if (catalogue.filters.categoryId === categoryId) {
     catalogue.setFilters({ categoryId: null })
   } else {
-    catalogue.replaceFilters({ categoryId })
+    catalogue.setFilters({ categoryId, searchTerm: '' })
   }
 }
 </script>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import CollectionFilters from '../components/public/CollectionFilters.vue'
 import FloatingWhatsAppButton from '../components/public/FloatingWhatsAppButton.vue'
@@ -13,6 +14,7 @@ import { useCatalogueStore } from '../stores/catalogue'
 import { useCollectionPageStore } from '../stores/collectionPage'
 import { useWishlistStore } from '../stores/wishlist'
 
+const router = useRouter()
 const catalogue = useCatalogueStore()
 const business = useBusinessStore()
 const wishlist = useWishlistStore()
@@ -24,6 +26,15 @@ onMounted(() => {
   wishlist.load()
   collectionPage.subscribeToConfig()
 })
+
+/** Prefer real history so Back returns to the previous page (home filters, PDP, etc.). */
+function goBack() {
+  if (typeof window !== 'undefined' && window.history.state?.back != null) {
+    router.back()
+    return
+  }
+  void router.push('/')
+}
 
 const hasResults = computed(() => catalogue.filteredProducts.length > 0)
 
@@ -55,12 +66,14 @@ useHead({
   <div class="min-h-screen bg-amore-theme" data-testid="collection-page">
     <Header :business-phone-e164="business.whatsappNumberE164" />
     <main class="mx-auto max-w-screen-2xl px-4 py-8">
-      <router-link
-        to="/"
+      <button
+        type="button"
+        data-testid="collection-back-link"
         class="mb-4 inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-amore-charcoal transition hover:text-amore-wordmark"
+        @click="goBack"
       >
-        ← Back to home
-      </router-link>
+        ← Back
+      </button>
 
       <SectionHeading
         title="Shop the Collection"

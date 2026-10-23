@@ -1,28 +1,40 @@
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { auth } from '../firebase/config'
+import { supabase } from '../supabase/client'
 
 const FRIENDLY_ERRORS: Record<string, string> = {
-  'auth/invalid-credential': 'That email or password is incorrect. Please try again.',
-  'auth/invalid-email': 'That email address doesn\'t look right. Please check and try again.',
-  'auth/user-not-found': 'That email or password is incorrect. Please try again.',
-  'auth/wrong-password': 'That email or password is incorrect. Please try again.',
-  'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
-  'auth/network-request-failed': 'No internet connection. Please check your connection and try again.',
+  invalid_credentials: 'That email or password is incorrect. Please try again.',
+  'Invalid login credentials': 'That email or password is incorrect. Please try again.',
+  email_not_confirmed: 'That email address has not been confirmed yet.',
+  over_request_rate_limit: 'Too many attempts. Please wait a moment and try again.',
+  user_not_found: 'That email or password is incorrect. Please try again.',
 }
 
-function friendlyMessageFor(code: unknown): string {
-  if (typeof code === 'string' && FRIENDLY_ERRORS[code]) {
-    return FRIENDLY_ERRORS[code]
+function friendlyMessageFor(error: unknown): string {
+  const message =
+    (error as { message?: string } | undefined)?.message ??
+    (error as { code?: string } | undefined)?.code ??
+    ''
+  if (message && FRIENDLY_ERRORS[message]) return FRIENDLY_ERRORS[message]
+  if (/invalid login credentials/i.test(message)) return FRIENDLY_ERRORS.invalid_credentials
+  if (/rate/i.test(message)) return FRIENDLY_ERRORS.over_request_rate_limit
+  if (/network|fetch/i.test(message)) {
+    return 'No internet connection. Please check your connection and try again.'
   }
   return 'Something went wrong signing you in. Please try again.'
 }
 
+interface AuthUser {
+  uid: string
+  email: string | null
+}
+
 interface AuthState {
-  currentUser: Pick<User, 'uid' | 'email'> | null
+  currentUser: AuthUser | null
   isLoading: boolean
   errorMessage: string | null
   initialized: boolean
+  /** Resolves after the first getSession() hydration (and listener attach). */
+  ready: Promise<void> | null
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -31,35 +43,51 @@ export const useAuthStore = defineStore('auth', {
     isLoading: false,
     errorMessage: null,
     initialized: false,
+    ready: null,
   }),
   actions: {
     async login(email: string, password: string) {
       this.isLoading = true
       this.errorMessage = null
       try {
-        const credential = await signInWithEmailAndPassword(auth, email, password)
-        this.currentUser = credential.user
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
+        const user = data.user
+        this.currentUser = user ? { uid: user.id, email: user.email ?? null } : null
       } catch (error: unknown) {
         this.currentUser = null
-        const code = (error as { code?: string } | undefined)?.code
-        this.errorMessage = friendlyMessageFor(code)
+        this.errorMessage = friendlyMessageFor(error)
       } finally {
         this.isLoading = false
       }
     },
 
     async logout() {
-      await signOut(auth)
+      await supabase.auth.signOut()
       this.currentUser = null
     },
 
-    /** Subscribes to Firebase Auth session state; call once at app startup. */
+    /** Subscribes to Auth session state; call once at app startup. */
     initAuthListener() {
-      if (this.initialized) return
+      if (this.initialized) return this.ready ?? Promise.resolve()
       this.initialized = true
-      onAuthStateChanged(auth, (user) => {
-        this.currentUser = user
-      })
+      this.ready = (async () => {
+        const { data } = await supabase.auth.getSession()
+        const user = data.session?.user
+        this.currentUser = user ? { uid: user.id, email: user.email ?? null } : null
+        supabase.auth.onAuthStateChange((_event, session) => {
+          const next = session?.user
+          this.currentUser = next ? { uid: next.id, email: next.email ?? null } : null
+        })
+      })()
+      return this.ready
+    },
+
+    /** Await before auth-gated navigation so full reloads don't race the guard. */
+    async ensureReady() {
+      await this.initAuthListener()
+      if (this.ready) await this.ready
     },
   },
 })
+

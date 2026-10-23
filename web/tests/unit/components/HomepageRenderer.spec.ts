@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_HOMEPAGE_SECTIONS } from '../../../src/data/defaultSections'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {} }))
-vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
+
+
 
 const HomepageRenderer = (await import('../../../src/components/public/HomepageRenderer.vue')).default
 

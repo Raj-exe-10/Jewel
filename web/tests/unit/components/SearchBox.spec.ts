@@ -10,8 +10,8 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({ push }),
   useRoute: () => ({ path: '/' }),
 }))
-vi.mock('../../../src/firebase/config', () => ({ db: {} }))
-vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
+
+
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const SearchBox = (await import('../../../src/components/public/SearchBox.vue')).default
@@ -36,11 +36,30 @@ const product: Product = {
   updatedBy: 'u1',
 }
 
+function installMemoryLocalStorage() {
+  const store = new Map<string, string>()
+  const memory: Storage = {
+    get length() {
+      return store.size
+    },
+    clear: () => store.clear(),
+    getItem: (key) => (store.has(key) ? store.get(key)! : null),
+    key: (index) => [...store.keys()][index] ?? null,
+    removeItem: (key) => {
+      store.delete(key)
+    },
+    setItem: (key, value) => {
+      store.set(key, String(value))
+    },
+  }
+  vi.stubGlobal('localStorage', memory)
+}
+
 describe('SearchBox', () => {
   beforeEach(() => {
+    installMemoryLocalStorage()
     setActivePinia(createPinia())
     push.mockClear()
-    localStorage.clear()
     clearSearchHistory()
 
     useCatalogueStore().$patch({
@@ -58,7 +77,7 @@ describe('SearchBox', () => {
     })
   })
 
-  it('keeps typing local without updating filters until Enter', async () => {
+  it('filters the catalogue live as the user types (without waiting for Enter)', async () => {
     const store = useCatalogueStore()
     const wrapper = mount(SearchBox)
 
@@ -66,11 +85,11 @@ describe('SearchBox', () => {
     await wrapper.get('input').setValue('kundan')
     await wrapper.get('input').trigger('input')
 
-    expect(store.filters.searchTerm).toBe('')
+    expect(store.filters.searchTerm).toBe('kundan')
     expect(wrapper.find('[data-testid="search-suggestions"]').exists()).toBe(true)
   })
 
-  it('commits searchTerm and keeps the term visible in the input on Enter', async () => {
+  it('keeps the term visible and records history on Enter', async () => {
     const store = useCatalogueStore()
     const wrapper = mount(SearchBox)
 
@@ -129,7 +148,7 @@ describe('SearchBox', () => {
     expect(push).toHaveBeenCalledWith({ name: 'product-detail', params: { id: 'p1' } })
   })
 
-  it('fills the input with a category suggestion label and sets filters', async () => {
+  it('applies a category suggestion as a chip filter without AND-ing the label as search text', async () => {
     const store = useCatalogueStore()
     document.body.innerHTML = '<div id="collection-products"></div>'
     document.getElementById('collection-products')!.scrollIntoView = vi.fn()
@@ -141,12 +160,12 @@ describe('SearchBox', () => {
     await wrapper.get('[data-testid="search-suggestion-category-cat-1"]').trigger('click')
 
     expect(store.filters.categoryId).toBe('cat-1')
-    expect(store.filters.searchTerm).toBe('Necklaces')
-    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('Necklaces')
+    expect(store.filters.searchTerm).toBe('')
+    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('')
     expect(wrapper.find('[data-testid="search-suggestions"]').exists()).toBe(false)
   })
 
-  it('submit search clears prior categoryId', async () => {
+  it('keeps an active category chip when the user searches by keyword', async () => {
     const store = useCatalogueStore()
     store.$patch({ filters: { ...store.filters, categoryId: 'cat-1' } })
 
@@ -157,6 +176,6 @@ describe('SearchBox', () => {
     await input.trigger('keydown.enter')
 
     expect(store.filters.searchTerm).toBe('kundan')
-    expect(store.filters.categoryId).toBeNull()
+    expect(store.filters.categoryId).toBe('cat-1')
   })
 })

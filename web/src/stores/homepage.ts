@@ -1,13 +1,13 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { defineStore } from 'pinia'
 import { DEFAULT_HOMEPAGE_SECTIONS, toFirestoreSection } from '../data/defaultSections'
-import { auth, db } from '../firebase/config'
+import { getCurrentUid, supabase } from '../supabase/client'
+import { mapSection, sectionInputToRow } from '../supabase/mappers'
 import type { HomepageSection, HomepageSectionInput } from '../types/homepage'
 
 interface HomepageState {
   sections: HomepageSection[]
   isLoading: boolean
-  unsubscribers: Array<() => void>
+  channelName: string | null
 }
 
 export type DefaultLayoutSection = HomepageSectionInput & { id: string }
@@ -22,7 +22,7 @@ export const useHomepageStore = defineStore('homepage', {
   state: (): HomepageState => ({
     sections: [],
     isLoading: false,
-    unsubscribers: [],
+    channelName: null,
   }),
   getters: {
     visibleSections(state): HomepageSection[] {
@@ -37,114 +37,155 @@ export const useHomepageStore = defineStore('homepage', {
     },
   },
   actions: {
+    async refreshSections() {
+      const { data, error } = await supabase.from('homepage_sections').select('*')
+      if (error) throw error
+      this.sections = (data ?? []).map((row) => mapSection(row as never))
+      this.isLoading = false
+    },
+
     subscribeToSections() {
       this.isLoading = true
-      const unsub = onSnapshot(collection(db, 'homepageSections'), (snapshot) => {
-        this.sections = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as HomepageSection)
+      void this.refreshSections().catch(() => {
         this.isLoading = false
       })
-      this.unsubscribers = [unsub]
+      if (this.channelName) return
+      this.channelName = 'homepage-sections'
+      supabase
+        .channel(this.channelName)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'homepage_sections' }, () => {
+          void this.refreshSections()
+        })
+        .subscribe()
     },
+
+
     unsubscribeAll() {
-      this.unsubscribers.forEach((unsub) => unsub())
-      this.unsubscribers = []
+      if (!this.channelName) return
+      for (const channel of supabase.getChannels()) {
+        if (channel.topic.includes(this.channelName)) void supabase.removeChannel(channel)
+      }
+      this.channelName = null
     },
+
     async saveSection(input: HomepageSectionInput, id?: string) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
       const payload = toFirestoreSection(input)
       if (id) {
-        await setDoc(doc(db, 'homepageSections', id), { ...payload, updatedAt: now, updatedBy: uid }, { merge: true })
+        const row = sectionInputToRow(payload, uid, now, id)
+        const { error } = await supabase.from('homepage_sections').upsert(row)
+        if (error) throw error
         return id
       }
-      const created = await addDoc(collection(db, 'homepageSections'), {
-        ...payload,
-        createdAt: now,
-        updatedAt: now,
-        updatedBy: uid,
-      })
-      return created.id
+      const newId = crypto.randomUUID()
+      const row = sectionInputToRow(payload, uid, now, newId)
+      const { error } = await supabase.from('homepage_sections').insert(row)
+      if (error) throw error
+      return newId
     },
+
     async setVisibility(id: string, isVisible: boolean) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
-      await setDoc(
-        doc(db, 'homepageSections', id),
-        { isVisible, updatedAt: Date.now(), updatedBy: uid },
-        { merge: true },
-      )
+      const uid = await getCurrentUid()
+      const { error } = await supabase
+        .from('homepage_sections')
+        .update({ is_visible: isVisible, updated_at: Date.now(), updated_by: uid })
+        .eq('id', id)
+      if (error) throw error
     },
+
     async deleteSection(id: string) {
-      await deleteDoc(doc(db, 'homepageSections', id))
+      const { error } = await supabase.from('homepage_sections').delete().eq('id', id)
+      if (error) throw error
     },
+
     async reorderSections(orderedIds: string[]) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
       await Promise.all(
-        orderedIds.map((id, index) =>
-          setDoc(doc(db, 'homepageSections', id), { sortOrder: index, updatedAt: now, updatedBy: uid }, { merge: true }),
-        ),
+        orderedIds.map(async (id, index) => {
+          const { error } = await supabase
+            .from('homepage_sections')
+            .update({ sort_order: index, updated_at: now, updated_by: uid })
+            .eq('id', id)
+          if (error) throw error
+        }),
       )
     },
+
     async saveDefaultLayout(sections?: HomepageSection[]) {
       const list = sections ?? this.sections
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
       const snapshot: DefaultLayoutSection[] = list.map((section, index) => ({
         ...toFirestoreSection(section),
         id: section.id,
         sortOrder: index,
       }))
-      await setDoc(doc(db, 'homepageConfig', 'defaultLayout'), {
-        sections: snapshot,
-        updatedAt: now,
-        updatedBy: uid,
+      const { error } = await supabase.from('homepage_config').upsert({
+        id: 'default_layout',
+        payload: { sections: snapshot },
+        updated_at: now,
+        updated_by: uid,
       })
+      if (error) throw error
     },
+
     async loadDefaultLayout(): Promise<DefaultLayoutSection[] | null> {
-      const snap = await getDoc(doc(db, 'homepageConfig', 'defaultLayout'))
-      if (!snap.exists()) return null
-      const data = snap.data() as { sections?: DefaultLayoutSection[] }
-      return Array.isArray(data.sections) ? data.sections : null
+      const { data, error } = await supabase
+        .from('homepage_config')
+        .select('payload')
+        .eq('id', 'default_layout')
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return null
+      const payload = data.payload as { sections?: DefaultLayoutSection[] }
+      return Array.isArray(payload?.sections) ? payload.sections : null
     },
+
     async replaceAllSections(sections: DefaultLayoutSection[]) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
       const keepIds = new Set(sections.map((section) => section.id))
       const extras = this.sections.filter((section) => !keepIds.has(section.id))
 
       await Promise.all(
-        sections.map((section, index) => {
+        sections.map(async (section, index) => {
           const { id, ...input } = section
-          return setDoc(
-            doc(db, 'homepageSections', id),
-            {
-              ...toFirestoreSection({ ...input, sortOrder: index }),
-              updatedAt: now,
-              updatedBy: uid,
-              createdAt: now,
-            },
-            { merge: true },
+          const row = sectionInputToRow(
+            toFirestoreSection({ ...input, sortOrder: index }),
+            uid,
+            now,
+            id,
           )
+          const { error } = await supabase.from('homepage_sections').upsert(row)
+          if (error) throw error
         }),
       )
-      await Promise.all(extras.map((section) => deleteDoc(doc(db, 'homepageSections', section.id))))
+      await Promise.all(
+        extras.map(async (section) => {
+          const { error } = await supabase.from('homepage_sections').delete().eq('id', section.id)
+          if (error) throw error
+        }),
+      )
     },
+
     async scrubProductFromSections(productId: string) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
       const affected = this.sections.filter((section) => section.productIds?.includes(productId))
       await Promise.all(
-        affected.map((section) =>
-          setDoc(
-            doc(db, 'homepageSections', section.id),
-            {
-              productIds: (section.productIds ?? []).filter((id) => id !== productId),
-              updatedAt: now,
-              updatedBy: uid,
-            },
-            { merge: true },
-          ),
-        ),
+        affected.map(async (section) => {
+          const { error } = await supabase
+            .from('homepage_sections')
+            .update({
+              product_ids: (section.productIds ?? []).filter((id) => id !== productId),
+              updated_at: now,
+              updated_by: uid,
+            })
+            .eq('id', section.id)
+          if (error) throw error
+        }),
       )
       this.sections = this.sections.map((section) =>
         section.productIds?.includes(productId)

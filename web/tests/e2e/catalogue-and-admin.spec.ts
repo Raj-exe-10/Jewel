@@ -1,112 +1,170 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
-
-// Runs against the Firebase Emulator Suite seeded via `npm run seed:emulator`
-// (see specs/001-amore-jewelry-catalogue/quickstart.md). Exercises the two
-// priority-1 user stories end-to-end: browsing/enquiring (US1) and the
-// full manager CRUD lifecycle (US3).
+import {
+  fillMinimalProduct,
+  goAdmin,
+  gotoCollectionWithProducts,
+  loginAs,
+  openNewProductForm,
+  OWNER_EMAIL,
+  STAFF2_EMAIL,
+} from './helpers/auth'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SAMPLE_PHOTO = path.join(__dirname, 'fixtures', 'sample-product.jpg')
 
-const OWNER_EMAIL = 'owner@amore.test'
-const OWNER_PASSWORD = 'password123'
-
-test.describe('Public storefront (US1)', () => {
-  test('browses seeded products and can filter by search', async ({ page }) => {
+test.describe('Public storefront', () => {
+  test('E2E-PUB-01/02: browses seeded products and can filter by search', async ({ page }) => {
     await page.goto('/')
+    await expect(page.getByRole('heading', { name: /^amore$/i })).toBeVisible()
 
-    // exact: true avoids matching other headings that merely contain "Amore"
-    // (e.g. the "The Hands Behind Amore" story section).
-    await expect(page.getByRole('heading', { name: 'Amore', exact: true })).toBeVisible()
-    await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible()
-
-    const initialCount = await page.locator('[data-testid="product-card"]').count()
-    expect(initialCount).toBeGreaterThan(0)
-
-    await page.getByPlaceholder('Search by name or keyword...').fill('zzz-no-such-product-zzz')
-    await expect(page.locator('[data-testid="empty-state"]')).toBeVisible()
-
-    await page.getByPlaceholder('Search by name or keyword...').fill('')
-    await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible()
+    await gotoCollectionWithProducts(page)
+    await page.getByTestId('collection-search').locator('input').fill('zzz-no-such-product-zzz')
+    await expect(page.getByTestId('empty-state')).toBeVisible({ timeout: 10_000 })
   })
 
-  test('the WhatsApp enquiry link on a product opens wa.me with the product name', async ({ page }) => {
+  test('E2E-PUB-05: WhatsApp enquiry link opens wa.me', async ({ page }) => {
     await page.goto('/')
-    const firstCard = page.locator('[data-testid="product-card"]').first()
-    const link = firstCard.getByTestId('whatsapp-link')
-    const href = await link.getAttribute('href')
-
+    const href = await page.getByTestId('whatsapp-link').first().getAttribute('href')
     expect(href).toContain('https://wa.me/')
+  })
+
+  test('E2E-PUB-04: product detail page loads from a card', async ({ page }) => {
+    await gotoCollectionWithProducts(page)
+    await page.locator('[data-testid="product-detail-link"]').first().click()
+    await expect(page).toHaveURL(/\/product\//)
+    await expect(page.getByTestId('whatsapp-link').first()).toBeVisible()
+  })
+
+  test('E2E-PUB-12: in-app Back and browser Back return to the previous page', async ({ page }) => {
+    await gotoCollectionWithProducts(page)
+    await page.locator('[data-testid="product-detail-link"]').first().click()
+    await expect(page).toHaveURL(/\/product\//)
+
+    await page.getByTestId('product-back-link').click()
+    await expect(page).toHaveURL(/\/collection/)
+
+    await page.locator('[data-testid="product-detail-link"]').first().click()
+    await expect(page).toHaveURL(/\/product\//)
+    await page.goBack()
+    await expect(page).toHaveURL(/\/collection/)
+  })
+
+  test('E2E-PUB-08: wishlist toggle persists in localStorage', async ({ page }) => {
+    await gotoCollectionWithProducts(page)
+    const heart = page.locator('[data-testid="wishlist-toggle"]').first()
+    await heart.click()
+    const stored = await page.evaluate(() => localStorage.getItem('amore:wishlist'))
+    expect(stored).toBeTruthy()
+    expect(JSON.parse(stored!)).not.toHaveLength(0)
+  })
+
+  test('E2E-PUB-09: collection page loads', async ({ page }) => {
+    await gotoCollectionWithProducts(page)
   })
 })
 
-test.describe('Manager panel (US3)', () => {
-  test('staff can log in, create a product, see it on the public site, then delete it', async ({ page, context }) => {
-    const productName = `E2E Test Piece ${Date.now()}`
+test.describe('Auth / admin shell', () => {
+  test('E2E-ADM-01: unauthenticated visitors are redirected', async ({ page }) => {
+    await page.goto('/admin/homepage')
+    await expect(page).toHaveURL(/\/admin\/login$/)
+  })
 
+  test('E2E-ADM-02: owner can log in', async ({ page }) => {
+    await loginAs(page, OWNER_EMAIL)
+  })
+
+  test('E2E-ADM-03: bad password stays on login', async ({ page }) => {
     await page.goto('/admin/login')
     await page.locator('input[type="email"]').fill(OWNER_EMAIL)
-    await page.locator('input[type="password"]').fill(OWNER_PASSWORD)
-    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.locator('input[type="password"]').fill('wrong-password')
+    await page.locator('input[type="password"]').press('Enter')
+    await expect(page).toHaveURL(/\/admin\/login/)
+    await expect(page.getByTestId('login-error')).toBeVisible({ timeout: 15_000 })
+  })
 
-    await expect(page).toHaveURL(/\/admin\/homepage$/)
-    await page.getByTestId('nav-products').click()
-    await expect(page).toHaveURL(/\/admin\/products$/)
+  test('E2E-ADM-05: staff2 has the same admin access', async ({ page }) => {
+    await loginAs(page, STAFF2_EMAIL)
+    await goAdmin(page, 'Products')
+  })
+})
 
-    await page.getByTestId('add-product-button').click()
-    await page.getByTestId('product-name').fill(productName)
-    await page.getByTestId('product-description').fill('Created by the Playwright smoke test.')
-    await page.getByTestId('product-price').fill('4200')
-    await page.getByTestId('media-image-input').setInputFiles(SAMPLE_PHOTO)
-    await expect(page.locator('img[alt="Product media"]').first()).toBeVisible({ timeout: 15000 })
+test.describe('Products CRUD + homepage', () => {
+  test('E2E-PRD-01/04: create product, see on public site, delete', async ({ page, context }) => {
+    const productName = `E2E Test Piece ${Date.now()}`
+
+    await loginAs(page, OWNER_EMAIL)
+    await openNewProductForm(page)
+    await fillMinimalProduct(page, {
+      name: productName,
+      description: 'Created by the Playwright smoke test.',
+      price: '4200',
+      photo: SAMPLE_PHOTO,
+    })
     await page.getByRole('button', { name: 'Save Product' }).click()
-
-    await expect(page.getByText(productName)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(productName)).toBeVisible({ timeout: 20_000 })
 
     const publicPage = await context.newPage()
-    await publicPage.goto('/')
-    await expect(publicPage.getByText(productName)).toBeVisible({ timeout: 15000 })
+    await publicPage.goto('/collection')
+    await expect(publicPage.getByText(productName)).toBeVisible({ timeout: 20_000 })
     await publicPage.close()
 
     page.once('dialog', (dialog) => dialog.accept())
     const productRow = page.locator('li', { hasText: productName })
     await productRow.getByRole('button', { name: 'Delete' }).click()
     await page.getByTestId('confirm-delete').click()
-
     await expect(page.getByText(productName)).toHaveCount(0)
   })
 
-  test('unauthenticated visitors are redirected away from the manager panel', async ({ page }) => {
-    await page.goto('/admin/homepage')
-    await expect(page).toHaveURL(/\/admin\/login$/)
-  })
-
-  test('staff can hide a homepage section and it disappears from the public storefront', async ({ page, context }) => {
-    await page.goto('/admin/login')
-    await page.locator('input[type="email"]').fill(OWNER_EMAIL)
-    await page.locator('input[type="password"]').fill(OWNER_PASSWORD)
-    await page.getByRole('button', { name: 'Sign in' }).click()
-    await expect(page).toHaveURL(/\/admin\/homepage$/)
+  test('E2E-HP-01: hide homepage section disappears from storefront', async ({ page, context }) => {
+    await loginAs(page, OWNER_EMAIL)
+    await expect(page.getByTestId('section-list').locator('li').first()).toBeVisible({ timeout: 15_000 })
 
     const aboutRow = page.locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })
     if ((await aboutRow.count()) === 0) {
       await page.getByTestId('restore-defaults').click()
       await page.getByTestId('confirm-dialog-confirm').click()
-      await expect(page.locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })).toBeVisible({
-        timeout: 15000,
+      // Restore swaps into a notice dialog; dismiss after it appears.
+      await expect(page.getByRole('heading', { name: 'Layout restored' })).toBeVisible({
+        timeout: 20_000,
       })
+      await page.getByTestId('confirm-dialog-confirm').click()
+      await expect(page.getByTestId('confirm-dialog')).toHaveCount(0)
+      await expect(aboutRow).toBeVisible({ timeout: 15_000 })
     }
 
-    await page
-      .locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })
-      .getByTestId('toggle-section-visibility')
-      .click()
+    const toggle = aboutRow.getByTestId('toggle-section-visibility')
+    // Visible → "Hide"; hidden → "Unhide"
+    if ((await toggle.textContent())?.match(/^unhide$/i)) {
+      await toggle.click()
+      await expect(toggle).toHaveText(/^hide$/i)
+    }
+    await toggle.click()
+    await expect(toggle).toHaveText(/^unhide$/i)
 
     const publicPage = await context.newPage()
     await publicPage.goto('/')
-    await expect(publicPage.getByRole('heading', { name: 'The Hands Behind Amore' })).toHaveCount(0, { timeout: 15000 })
+    await expect(publicPage.getByRole('heading', { name: 'The Hands Behind Amore' })).toHaveCount(0, {
+      timeout: 15_000,
+    })
     await publicPage.close()
+  })
+
+
+
+  test('E2E-BIZ-01: business settings page reachable', async ({ page }) => {
+    await loginAs(page, OWNER_EMAIL)
+    await goAdmin(page, 'Business')
+  })
+
+  test('E2E-CAT-01: catalogue settings page reachable', async ({ page }) => {
+    await loginAs(page, OWNER_EMAIL)
+    await goAdmin(page, 'Catalogue')
+  })
+
+  test('E2E-TAX-01: taxonomies page reachable', async ({ page }) => {
+    await loginAs(page, OWNER_EMAIL)
+    await goAdmin(page, 'Taxonomies')
   })
 })

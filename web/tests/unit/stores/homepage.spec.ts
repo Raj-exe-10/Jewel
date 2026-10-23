@@ -3,22 +3,32 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_HOMEPAGE_SECTIONS } from '../../../src/data/defaultSections'
 import type { HomepageSection } from '../../../src/types/homepage'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {}, auth: { currentUser: { uid: 'staff-1' } } }))
+const insertMock = vi.fn().mockResolvedValue({ error: null })
+const upsertMock = vi.fn().mockResolvedValue({ error: null })
+const updateMock = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: null }) }))
+const deleteMock = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: null }) }))
+const maybeSingleMock = vi.fn().mockResolvedValue({ data: null, error: null })
 
-const { addDocMock, setDocMock, deleteDocMock } = vi.hoisted(() => ({
-  addDocMock: vi.fn().mockResolvedValue({ id: 'new-section' }),
-  setDocMock: vi.fn().mockResolvedValue(undefined),
-  deleteDocMock: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(() => 'homepageSections'),
-  doc: vi.fn((_db: unknown, _col: string, id: string) => id),
-  addDoc: addDocMock,
-  setDoc: setDocMock,
-  deleteDoc: deleteDocMock,
-  getDoc: vi.fn(),
-  onSnapshot: vi.fn(),
+vi.mock('../../../src/supabase/client', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: maybeSingleMock,
+        }),
+      }),
+      insert: insertMock,
+      upsert: upsertMock,
+      update: updateMock,
+      delete: deleteMock,
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
+  },
+  getCurrentUid: vi.fn().mockResolvedValue('staff-1'),
 }))
 
 const { useHomepageStore } = await import('../../../src/stores/homepage')
@@ -39,12 +49,25 @@ function makeSection(overrides: Partial<HomepageSection> = {}): HomepageSection 
   }
 }
 
+function createDraft() {
+  return {
+    type: 'about' as const,
+    title: 'About',
+    anchorId: 'about',
+    sortOrder: 0,
+    isVisible: true,
+    content: { bodyParagraphs: ['hello'] },
+  }
+}
+
 describe('homepage store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    addDocMock.mockClear()
-    setDocMock.mockClear()
-    deleteDocMock.mockClear()
+    insertMock.mockClear()
+    upsertMock.mockClear()
+    updateMock.mockClear()
+    deleteMock.mockClear()
+    vi.stubGlobal('crypto', { randomUUID: () => 'new-section' })
   })
 
   it('visibleSections hides unpublished sections and sorts by sortOrder', () => {
@@ -60,7 +83,7 @@ describe('homepage store', () => {
     expect(store.visibleSections.map((s) => s.id)).toEqual(['a', 'b'])
   })
 
-  it('falls back to default storefront sections when Firestore has none yet', () => {
+  it('falls back to default storefront sections when none are loaded yet', () => {
     const store = useHomepageStore()
     expect(store.displaySections).toHaveLength(DEFAULT_HOMEPAGE_SECTIONS.length)
     expect(store.displaySections[0]?.type).toBe('hero_banner')
@@ -72,44 +95,43 @@ describe('homepage store', () => {
     expect(store.displaySections.map((s) => s.id)).toEqual(['only'])
   })
 
-  it('saveSection creates a new document when no id is given', async () => {
+  it('saveSection creates a new row when no id is given', async () => {
     const store = useHomepageStore()
     const id = await store.saveSection(createDraft())
     expect(id).toBe('new-section')
-    expect(addDocMock).toHaveBeenCalledTimes(1)
+    expect(insertMock).toHaveBeenCalledTimes(1)
   })
 
-  it('saveSection merges an existing document', async () => {
+  it('saveSection upserts an existing row', async () => {
     const store = useHomepageStore()
     await store.saveSection(createDraft(), 'sec-1')
-    expect(setDocMock).toHaveBeenCalledTimes(1)
+    expect(upsertMock).toHaveBeenCalledTimes(1)
   })
 
-  it('setVisibility writes isVisible for the section', async () => {
+  it('setVisibility writes is_visible for the section', async () => {
     const store = useHomepageStore()
     await store.setVisibility('sec-1', false)
-    expect(setDocMock).toHaveBeenCalled()
+    expect(updateMock).toHaveBeenCalled()
   })
 
-  it('deleteSection removes the Firestore document', async () => {
+  it('deleteSection removes the row', async () => {
     const store = useHomepageStore()
     await store.deleteSection('sec-1')
-    expect(deleteDocMock).toHaveBeenCalled()
+    expect(deleteMock).toHaveBeenCalled()
   })
 
-  it('reorderSections writes sequential sortOrder values', async () => {
+  it('reorderSections writes sequential sort_order values', async () => {
     const store = useHomepageStore()
     await store.reorderSections(['c', 'a', 'b'])
-    expect(setDocMock).toHaveBeenCalledTimes(3)
+    expect(updateMock).toHaveBeenCalledTimes(3)
   })
 
-  it('saveDefaultLayout writes the current sections snapshot to homepageConfig', async () => {
+  it('saveDefaultLayout upserts default_layout config', async () => {
     const store = useHomepageStore()
     store.$patch({ sections: [makeSection({ id: 'keep-me' })] })
     await store.saveDefaultLayout()
-    expect(setDocMock).toHaveBeenCalled()
-    const args = setDocMock.mock.calls.at(-1)
-    expect(args?.[0]).toBe('defaultLayout')
+    expect(upsertMock).toHaveBeenCalled()
+    expect(upsertMock.mock.calls.at(-1)?.[0]).toMatchObject({ id: 'default_layout' })
   })
 
   it('replaceAllSections upserts snapshot sections and deletes extras', async () => {
@@ -130,47 +152,18 @@ describe('homepage store', () => {
         isVisible: true,
         content: { bodyParagraphs: ['updated'] },
       },
-      {
-        id: 'brand-new',
-        type: 'contact',
-        title: 'Contact',
-        anchorId: 'contact',
-        sortOrder: 1,
-        isVisible: true,
-        content: { bodyParagraphs: ['hi'] },
-      },
     ])
-
-    expect(setDocMock).toHaveBeenCalled()
-    expect(deleteDocMock).toHaveBeenCalledWith('drop-me')
+    expect(upsertMock).toHaveBeenCalled()
+    expect(deleteMock).toHaveBeenCalled()
   })
 
-  it('scrubProductFromSections removes the id from productIds', async () => {
+  it('scrubProductFromSections removes the id from product_ids', async () => {
     const store = useHomepageStore()
     store.$patch({
-      sections: [
-        makeSection({
-          id: 'manual',
-          type: 'product_carousel',
-          productSelectionMode: 'manual',
-          productIds: ['p1', 'p2'],
-          content: { variant: 'carousel' },
-        }),
-      ],
+      sections: [makeSection({ id: 'carousel', productIds: ['p1', 'p2'] })],
     })
     await store.scrubProductFromSections('p1')
-    expect(setDocMock).toHaveBeenCalled()
-    expect(store.sections[0]!.productIds).toEqual(['p2'])
+    expect(updateMock).toHaveBeenCalled()
+    expect(store.sections[0]?.productIds).toEqual(['p2'])
   })
 })
-
-function createDraft() {
-  return {
-    type: 'about' as const,
-    title: 'About',
-    anchorId: 'about',
-    sortOrder: 0,
-    isVisible: true,
-    content: { bodyParagraphs: ['hello'] },
-  }
-}

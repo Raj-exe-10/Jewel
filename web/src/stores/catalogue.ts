@@ -1,7 +1,13 @@
-import { addDoc, collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { defineStore } from 'pinia'
-import { auth, db } from '../firebase/config'
 import { normalizeTaxonomyName, planTaxonomyCollapse } from '../lib/taxonomyDuplicates'
+import { getCurrentUid, supabase } from '../supabase/client'
+import {
+  TAXONOMY_TABLE,
+  PRODUCT_SELECT,
+  mapProduct,
+  mapTaxonomy,
+  productInputToRow,
+} from '../supabase/mappers'
 import {
   EMPTY_FILTERS,
   type CatalogueFilters,
@@ -22,7 +28,17 @@ interface CatalogueState {
   styleTags: StyleTag[]
   filters: CatalogueFilters
   isLoading: boolean
-  unsubscribers: Array<() => void>
+  channelNames: string[]
+}
+
+async function replaceProductStyleTags(productId: string, styleTagIds: string[]) {
+  const { error: delError } = await supabase.from('product_style_tags').delete().eq('product_id', productId)
+  if (delError) throw delError
+  if (styleTagIds.length === 0) return
+  const { error } = await supabase.from('product_style_tags').insert(
+    styleTagIds.map((style_tag_id) => ({ product_id: productId, style_tag_id })),
+  )
+  if (error) throw error
 }
 
 export const useCatalogueStore = defineStore('catalogue', {
@@ -33,7 +49,7 @@ export const useCatalogueStore = defineStore('catalogue', {
     styleTags: [],
     filters: { ...EMPTY_FILTERS },
     isLoading: false,
-    unsubscribers: [],
+    channelNames: [],
   }),
   getters: {
     filteredProducts(state): Product[] {
@@ -63,56 +79,99 @@ export const useCatalogueStore = defineStore('catalogue', {
     setFilters(partial: Partial<CatalogueFilters>) {
       this.filters = { ...this.filters, ...partial }
     },
-    /** Replace all filters — use when the user picks a new search or taxonomy filter. */
     replaceFilters(partial: Partial<CatalogueFilters>) {
       this.filters = { ...EMPTY_FILTERS, ...partial }
     },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }
     },
-    /** Live-subscribes to Firestore so manager-panel edits show up within seconds (FR-024). */
-    subscribeToCatalogue() {
-      this.isLoading = true
-      const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-        this.products = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Product)
-        this.isLoading = false
-      })
-      const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
-        this.categories = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Category)
-      })
-      const unsubCollections = onSnapshot(collection(db, 'collections'), (snapshot) => {
-        this.collections = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Collection)
-      })
-      const unsubStyleTags = onSnapshot(collection(db, 'styleTags'), (snapshot) => {
-        this.styleTags = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as StyleTag)
-      })
-      this.unsubscribers = [unsubProducts, unsubCategories, unsubCollections, unsubStyleTags]
-    },
-    unsubscribeAll() {
-      this.unsubscribers.forEach((unsub) => unsub())
-      this.unsubscribers = []
+
+    async refreshCatalogue() {
+      let lastError: unknown
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const [productsRes, categoriesRes, collectionsRes, styleTagsRes] = await Promise.all([
+            supabase.from('products').select(PRODUCT_SELECT),
+            supabase.from('categories').select('*'),
+            supabase.from('collections').select('*'),
+            supabase.from('style_tags').select('*'),
+          ])
+          if (productsRes.error) throw productsRes.error
+          if (categoriesRes.error) throw categoriesRes.error
+          if (collectionsRes.error) throw collectionsRes.error
+          if (styleTagsRes.error) throw styleTagsRes.error
+
+          this.products = (productsRes.data ?? []).map((row) => mapProduct(row as never))
+          this.categories = (categoriesRes.data ?? []).map((row) => mapTaxonomy(row as never) as Category)
+          this.collections = (collectionsRes.data ?? []).map((row) => mapTaxonomy(row as never) as Collection)
+          this.styleTags = (styleTagsRes.data ?? []).map((row) => mapTaxonomy(row as never) as StyleTag)
+          this.isLoading = false
+          return
+        } catch (error) {
+          lastError = error
+          if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 300 * attempt))
+        }
+      }
+      this.isLoading = false
+      throw lastError
     },
 
-    /** Creates a new product (id undefined) or overwrites an existing one. */
+    /** Live-subscribes so manager-panel edits show up within seconds (FR-024). */
+    subscribeToCatalogue() {
+      this.isLoading = true
+      void this.refreshCatalogue().catch(() => {
+        this.isLoading = false
+      })
+
+      // Re-entry (e.g. Collection → ProductDetail → Collection) must not call `.on()` on an
+      // already-subscribed Realtime channel — supabase-js throws after `subscribe()`.
+      if (this.channelNames.length > 0) return
+
+      const tables = ['products', 'categories', 'collections', 'style_tags', 'product_style_tags'] as const
+      this.channelNames = tables.map((table) => {
+        const name = `catalogue-${table}`
+        supabase
+          .channel(name)
+          .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+            void this.refreshCatalogue()
+          })
+          .subscribe()
+        return name
+      })
+    },
+
+
+    unsubscribeAll() {
+      for (const channel of supabase.getChannels()) {
+        if (this.channelNames.includes(channel.topic.replace(/^realtime:/, '')) || this.channelNames.some((n) => channel.topic.includes(n))) {
+          void supabase.removeChannel(channel)
+        }
+      }
+      this.channelNames = []
+    },
+
     async saveProduct(input: ProductInput, id?: string) {
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
+      const row = productInputToRow(input, uid, now, id ? ({ id } as Product) : undefined)
+
       if (id) {
-        await setDoc(doc(db, 'products', id), { ...input, updatedAt: now, updatedBy: uid }, { merge: true })
+        const { error } = await supabase.from('products').update(row).eq('id', id)
+        if (error) throw error
+        await replaceProductStyleTags(id, input.styleTagIds)
         return id
       }
-      const created = await addDoc(collection(db, 'products'), {
-        ...input,
-        createdAt: now,
-        updatedAt: now,
-        createdBy: uid,
-        updatedBy: uid,
-      })
-      return created.id
+
+      const { data, error } = await supabase.from('products').insert(row).select('id').single()
+      if (error) throw error
+      const newId = data.id as string
+      await replaceProductStyleTags(newId, input.styleTagIds)
+      return newId
     },
 
     async deleteProduct(id: string) {
-      await deleteDoc(doc(db, 'products', id))
+      const { error } = await supabase.from('products').delete().eq('id', id)
+      if (error) throw error
     },
 
     isTaxonomyReferenced(taxonomy: TaxonomyName, id: string): boolean {
@@ -129,14 +188,22 @@ export const useCatalogueStore = defineStore('catalogue', {
       }
       const existingCount = this[taxonomy].length
       const input: NamedTaxonomyInput = { name: trimmed, sortOrder: existingCount }
-      await addDoc(collection(db, taxonomy), { ...input, createdAt: Date.now() })
+      const table = TAXONOMY_TABLE[taxonomy]
+      const { error } = await supabase.from(table).insert({
+        name: input.name,
+        sort_order: input.sortOrder,
+        created_at: Date.now(),
+      })
+      if (error) throw error
     },
 
     async removeTaxonomyEntry(taxonomy: TaxonomyName, id: string) {
       if (this.isTaxonomyReferenced(taxonomy, id)) {
         throw new Error(`Cannot remove: still referenced by one or more products.`)
       }
-      await deleteDoc(doc(db, taxonomy, id))
+      const table = TAXONOMY_TABLE[taxonomy]
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      if (error) throw error
     },
 
     async collapseDuplicateTaxonomies() {
@@ -148,24 +215,30 @@ export const useCatalogueStore = defineStore('catalogue', {
       })
       if (plan.deleteIds.length === 0 && plan.productUpdates.length === 0) return
 
-      const uid = auth.currentUser?.uid ?? 'unknown'
+      const uid = await getCurrentUid()
       const now = Date.now()
       await Promise.all(
-        plan.productUpdates.map((update) =>
-          setDoc(
-            doc(db, 'products', update.id),
-            {
-              categoryId: update.categoryId,
-              collectionId: update.collectionId,
-              styleTagIds: update.styleTagIds,
-              updatedAt: now,
-              updatedBy: uid,
-            },
-            { merge: true },
-          ),
-        ),
+        plan.productUpdates.map(async (update) => {
+          const { error } = await supabase
+            .from('products')
+            .update({
+              category_id: update.categoryId,
+              collection_id: update.collectionId,
+              updated_at: now,
+              updated_by: uid,
+            })
+            .eq('id', update.id)
+          if (error) throw error
+          await replaceProductStyleTags(update.id, update.styleTagIds)
+        }),
       )
-      await Promise.all(plan.deleteIds.map((entry) => deleteDoc(doc(db, entry.taxonomy, entry.id))))
+      await Promise.all(
+        plan.deleteIds.map(async (entry) => {
+          const table = TAXONOMY_TABLE[entry.taxonomy]
+          const { error } = await supabase.from(table).delete().eq('id', entry.id)
+          if (error) throw error
+        }),
+      )
     },
   },
 })

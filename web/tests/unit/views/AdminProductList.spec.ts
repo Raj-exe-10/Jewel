@@ -3,26 +3,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Product } from '../../../src/types/catalogue'
 
-vi.mock('../../../src/firebase/config', () => ({ db: {}, storage: {}, auth: { currentUser: { uid: 'staff-1' } } }))
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  onSnapshot: vi.fn(),
-  doc: vi.fn(),
-  addDoc: vi.fn(),
-  setDoc: vi.fn(),
-  deleteDoc: vi.fn(),
-}))
-vi.mock('firebase/storage', () => ({
-  ref: vi.fn(),
-  uploadBytes: vi.fn(),
-  getDownloadURL: vi.fn(),
-  deleteObject: vi.fn(),
-}))
-vi.mock('firebase/auth', () => ({
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
-}))
+
+
+
+
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),
   useRoute: () => ({ path: '/admin/products' }),

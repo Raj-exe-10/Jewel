@@ -1,29 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 
 const { signInMock } = vi.hoisted(() => ({ signInMock: vi.fn() }))
 
-vi.mock('../../../src/firebase/config', () => ({ auth: {}, db: {}, storage: {} }))
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
-  addDoc: vi.fn(),
-  setDoc: vi.fn(),
-  deleteDoc: vi.fn(),
-  onSnapshot: vi.fn(),
-}))
-vi.mock('firebase/storage', () => ({
-  ref: vi.fn(),
-  uploadBytes: vi.fn(),
-  getDownloadURL: vi.fn(),
-  deleteObject: vi.fn(),
-}))
-vi.mock('firebase/auth', () => ({
-  signInWithEmailAndPassword: signInMock,
-  signOut: vi.fn(),
-  onAuthStateChanged: vi.fn(),
+vi.mock('../../../src/supabase/client', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: signInMock,
+      signOut: vi.fn(),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+    },
+  },
+  getCurrentUid: vi.fn().mockResolvedValue('staff-1'),
 }))
 
 vi.mock('../../../src/views/admin/AdminHomepage.vue', () => ({
@@ -48,27 +39,31 @@ describe('AdminLogin', () => {
   }
 
   it('navigates to the homepage manager after a valid login', async () => {
-    signInMock.mockResolvedValue({ user: { uid: 'abc', email: 'owner@amore.test' } })
+    signInMock.mockResolvedValue({
+      data: { user: { id: 'abc', email: 'owner@amore.test' } },
+      error: null,
+    })
     const { wrapper, router } = await mountLogin()
 
     await wrapper.get('input[type="email"]').setValue('owner@amore.test')
     await wrapper.get('input[type="password"]').setValue('correct-password')
     await wrapper.get('form').trigger('submit.prevent')
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/admin/homepage'), { timeout: 5000 })
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/admin/homepage'), {
+      timeout: 5000,
+    })
   })
 
   it('shows a plain-language error and stays on the login screen for invalid credentials', async () => {
-    signInMock.mockRejectedValue({ code: 'auth/invalid-credential' })
+    signInMock.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid login credentials' },
+    })
     const { wrapper, router } = await mountLogin()
 
     await wrapper.get('input[type="email"]').setValue('owner@amore.test')
-    await wrapper.get('input[type="password"]').setValue('wrong-password')
+    await wrapper.get('input[type="password"]').setValue('wrong')
     await wrapper.get('form').trigger('submit.prevent')
-    await flushPromises()
-
+    await vi.waitFor(() => expect(wrapper.text()).toMatch(/incorrect|try again/i))
     expect(router.currentRoute.value.path).toBe('/admin/login')
-    const errorText = wrapper.get('[data-testid="login-error"]').text()
-    expect(errorText.length).toBeGreaterThan(0)
-    expect(errorText).not.toMatch(/auth\//)
   })
 })

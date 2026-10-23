@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { PaperClipIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 import { useImageCompression } from '../../composables/useImageCompression'
-import { storage } from '../../firebase/config'
+import { deletePublicUrl, isManagedStorageUrl, uploadPublicFile } from '../../supabase/storage'
 import type { ProductMediaItem } from '../../lib/productMedia'
 
 const props = defineProps<{ modelValue: ProductMediaItem[]; productId: string }>()
@@ -19,6 +18,11 @@ async function onImagesSelected(event: Event) {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files ?? [])
   if (files.length === 0) return
+  if (files.some((file) => !file.type.startsWith('image/'))) {
+    uploadError.value = 'Please choose image files only (JPEG, PNG, WebP, GIF, or AVIF).'
+    input.value = ''
+    return
+  }
   isUploading.value = true
   uploadError.value = null
   try {
@@ -26,13 +30,12 @@ async function onImagesSelected(event: Event) {
     for (const [offset, file] of files.entries()) {
       const compressed = await compress(file)
       const id = `img-${Date.now()}-${offset}`
-      const path = `product-photos/${props.productId}/${id}-${file.name}`
-      const fileRef = storageRef(storage, path)
-      await uploadBytes(fileRef, compressed, { contentType: compressed.type })
+      const fileName = `${props.productId}/${id}-${file.name}`
+      const url = await uploadPublicFile('product-photos', fileName, compressed, compressed.type)
       uploaded.push({
         id,
         kind: 'image',
-        url: await getDownloadURL(fileRef),
+        url,
         sortOrder: props.modelValue.length + offset,
       })
     }
@@ -49,19 +52,23 @@ async function onVideosSelected(event: Event) {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files ?? [])
   if (files.length === 0) return
+  if (files.some((file) => file.type !== 'video/mp4' && file.type !== 'video/webm')) {
+    uploadError.value = 'Please choose MP4 or WebM video files only.'
+    input.value = ''
+    return
+  }
   isUploading.value = true
   uploadError.value = null
   try {
     const uploaded: ProductMediaItem[] = []
     for (const [offset, file] of files.entries()) {
       const id = `vid-${Date.now()}-${offset}`
-      const path = `product-videos/${props.productId}/${id}-${file.name}`
-      const fileRef = storageRef(storage, path)
-      await uploadBytes(fileRef, file, { contentType: file.type || 'video/mp4' })
+      const fileName = `${props.productId}/${id}-${file.name}`
+      const url = await uploadPublicFile('product-videos', fileName, file, file.type || 'video/mp4')
       uploaded.push({
         id,
         kind: 'video',
-        url: await getDownloadURL(fileRef),
+        url,
         posterUrl: '',
         sortOrder: props.modelValue.length + offset,
       })
@@ -77,8 +84,8 @@ async function onVideosSelected(event: Event) {
 
 async function removeItem(item: ProductMediaItem) {
   try {
-    if (item.url.includes('firebasestorage') || item.url.includes('127.0.0.1')) {
-      await deleteObject(storageRef(storage, item.url))
+    if (isManagedStorageUrl(item.url)) {
+      await deletePublicUrl(item.url)
     }
   } catch {
     // Best-effort cleanup.

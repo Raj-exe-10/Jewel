@@ -1,20 +1,26 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../src/firebase/config', () => ({
-  db: {},
-  auth: { currentUser: { uid: 'staff-1' } },
-}))
+const upsertMock = vi.fn().mockResolvedValue({ error: null })
+const maybeSingleMock = vi.fn().mockResolvedValue({ data: null, error: null })
 
-const { onSnapshotMock, setDocMock } = vi.hoisted(() => ({
-  onSnapshotMock: vi.fn(),
-  setDocMock: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('firebase/firestore', () => ({
-  doc: vi.fn((_db: unknown, collection: string, id: string) => `${collection}/${id}`),
-  onSnapshot: onSnapshotMock,
-  setDoc: setDocMock,
+vi.mock('../../../src/supabase/client', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: maybeSingleMock,
+        }),
+      }),
+      upsert: upsertMock,
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
+  },
+  getCurrentUid: vi.fn().mockResolvedValue('staff-1'),
 }))
 
 const { useCollectionPageStore } = await import('../../../src/stores/collectionPage')
@@ -22,37 +28,32 @@ const { useCollectionPageStore } = await import('../../../src/stores/collectionP
 describe('collection page store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    onSnapshotMock.mockReset()
-    setDocMock.mockClear()
+    upsertMock.mockClear()
+    maybeSingleMock.mockResolvedValue({ data: null, error: null })
   })
 
-  it('uses ten products per row until a saved configuration arrives', () => {
-    onSnapshotMock.mockImplementation((_ref, callback) => {
-      callback({ exists: () => false })
-      return vi.fn()
-    })
-
+  it('uses ten products per row until a saved configuration arrives', async () => {
     const store = useCollectionPageStore()
-    store.subscribeToConfig()
-
+    await store.refreshConfig()
     expect(store.productsPerRow).toBe(10)
   })
 
   it('uses a saved row limit and persists valid admin changes', async () => {
-    onSnapshotMock.mockImplementation((_ref, callback) => {
-      callback({ exists: () => true, data: () => ({ productsPerRow: 6 }) })
-      return vi.fn()
-    })
-
+    maybeSingleMock.mockResolvedValue({ data: { products_per_row: 6 }, error: null })
     const store = useCollectionPageStore()
-    store.subscribeToConfig()
-    await store.saveProductsPerRow(8)
+    await store.refreshConfig()
+    expect(store.productsPerRow).toBe(6)
 
-    expect(store.productsPerRow).toBe(8)
-    expect(setDocMock).toHaveBeenCalledWith(
-      'catalogueConfig/collectionPage',
-      expect.objectContaining({ productsPerRow: 8 }),
-      { merge: true },
+    await store.saveProductsPerRow(4)
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'collection_page', products_per_row: 4 }),
     )
+    expect(store.productsPerRow).toBe(4)
+  })
+
+  it('rejects out-of-range products per row', async () => {
+    const store = useCollectionPageStore()
+    await expect(store.saveProductsPerRow(0)).rejects.toThrow(/between/i)
+    await expect(store.saveProductsPerRow(11)).rejects.toThrow(/between/i)
   })
 })

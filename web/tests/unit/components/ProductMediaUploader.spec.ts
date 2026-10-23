@@ -2,13 +2,12 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import type { ProductMediaItem } from '../../../src/lib/productMedia'
 
-vi.mock('../../../src/firebase/config', () => ({ storage: {} }))
-vi.mock('firebase/storage', () => ({
-  ref: vi.fn(),
-  uploadBytes: vi.fn(),
-  getDownloadURL: vi.fn(),
-  deleteObject: vi.fn(),
+vi.mock('../../../src/supabase/storage', () => ({
+  uploadPublicFile: vi.fn().mockResolvedValue('https://example.com/file'),
+  deletePublicUrl: vi.fn().mockResolvedValue(undefined),
+  isManagedStorageUrl: vi.fn().mockReturnValue(true),
 }))
+
 vi.mock('../../../src/composables/useImageCompression', () => ({
   useImageCompression: () => ({ compress: vi.fn(async (file: File) => file) }),
 }))

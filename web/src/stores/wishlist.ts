@@ -6,7 +6,10 @@ const STORAGE_KEY = 'amore:wishlist'
 function readFromStorage(): string[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as string[]) : []
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((id): id is string => typeof id === 'string')
   } catch {
     return []
   }

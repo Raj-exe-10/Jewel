@@ -56,6 +56,7 @@ function validate(): string | null {
 }
 
 async function onSubmit() {
+  if (isSaving.value) return
   const error = validate()
   if (error) {
     formError.value = error

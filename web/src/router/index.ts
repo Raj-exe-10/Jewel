@@ -88,13 +88,15 @@ export function createAppRouter(history: RouterHistory) {
     },
   })
 
-  appRouter.beforeEach((to) => {
+  appRouter.beforeEach(async (to) => {
     const auth = useAuthStore()
+    await auth.ensureReady()
     if (to.meta.requiresAuth && !auth.currentUser) {
       return { path: '/admin/login' }
     }
     return true
   })
+
 
   return appRouter
 }

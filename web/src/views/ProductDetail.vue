@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import FloatingWhatsAppButton from '../components/public/FloatingWhatsAppButton.vue'
 import Footer from '../components/public/Footer.vue'
@@ -15,6 +15,7 @@ import { useCatalogueStore } from '../stores/catalogue'
 import { useWishlistStore } from '../stores/wishlist'
 
 const route = useRoute()
+const router = useRouter()
 const catalogue = useCatalogueStore()
 const business = useBusinessStore()
 const wishlist = useWishlistStore()
@@ -39,7 +40,20 @@ const enquiryLink = computed(() =>
 const isWishlisted = computed(() =>
   product.value ? wishlist.isWishlisted(product.value.id) : false,
 )
-const backTo = computed(() => (route.query.from === 'home' ? '/' : '/collection'))
+/** Fallback when this page was opened without in-app history (e.g. new tab / deep link). */
+const fallbackBackTo = computed(() => (route.query.from === 'home' ? '/' : '/collection'))
+
+/**
+ * Prefer real browser history so we return to the exact previous page (filters,
+ * scroll) and do not push a duplicate entry that breaks the browser Back button.
+ */
+function goBack() {
+  if (typeof window !== 'undefined' && window.history.state?.back != null) {
+    router.back()
+    return
+  }
+  void router.push(fallbackBackTo.value)
+}
 
 const others = computed(() => catalogue.products.filter((item) => item.id !== product.value?.id))
 
@@ -76,16 +90,18 @@ useHead(
   <div class="min-h-screen bg-amore-theme">
     <Header :business-phone-e164="business.whatsappNumberE164" />
     <main class="mx-auto max-w-screen-2xl px-4 py-6">
-      <router-link
-        :to="backTo"
+      <button
+        type="button"
         data-testid="product-back-link"
         class="mb-4 inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-amore-charcoal transition hover:text-amore-gold"
+        @click="goBack"
       >
         ← Back
-      </router-link>
+      </button>
 
       <div
         v-if="!product"
+        data-testid="product-unavailable"
         class="rounded-sm border border-amore-gold/30 bg-white/70 p-10 text-center text-neutral-600"
       >
         This product is no longer available.

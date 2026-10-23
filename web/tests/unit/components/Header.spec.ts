@@ -13,8 +13,8 @@ vi.mock('vue-router', () => ({
     template: '<a :href="typeof to === \'string\' ? to : to.path" data-testid="brand-logo-stub"><slot /></a>',
   },
 }))
-vi.mock('../../../src/firebase/config', () => ({ db: {} }))
-vi.mock('firebase/firestore', () => ({ collection: vi.fn(), onSnapshot: vi.fn() }))
+
+
 
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const { useWishlistStore } = await import('../../../src/stores/wishlist')

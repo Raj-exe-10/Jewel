@@ -14,25 +14,29 @@ const { saveSectionMock, setVisibilityMock, reorderSectionsMock, deleteSectionMo
   replaceAllSectionsMock: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../src/firebase/config', () => ({ db: {}, storage: {}, auth: { currentUser: { uid: 'staff-1' } } }))
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  onSnapshot: vi.fn(),
-  doc: vi.fn(),
-  addDoc: vi.fn(),
-  setDoc: vi.fn(),
-  deleteDoc: vi.fn(),
-}))
-vi.mock('firebase/storage', () => ({
-  ref: vi.fn(),
-  uploadBytes: vi.fn(),
-  getDownloadURL: vi.fn(),
-  deleteObject: vi.fn(),
-}))
-vi.mock('firebase/auth', () => ({
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
+
+
+
+
+
+vi.mock('../../../src/supabase/client', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
+  },
+  getCurrentUid: vi.fn().mockResolvedValue('staff-1'),
 }))
 
 vi.mock('vue-router', () => ({
@@ -44,6 +48,7 @@ const AdminHomepage = (await import('../../../src/views/admin/AdminHomepage.vue'
 const { useHomepageStore } = await import('../../../src/stores/homepage')
 const { useCatalogueStore } = await import('../../../src/stores/catalogue')
 const { useAuthStore } = await import('../../../src/stores/auth')
+const { useBusinessStore } = await import('../../../src/stores/business')
 
 describe('AdminHomepage', () => {
   beforeEach(() => {
@@ -77,6 +82,9 @@ describe('AdminHomepage', () => {
 
     const catalogue = useCatalogueStore()
     catalogue.subscribeToCatalogue = vi.fn()
+
+    const business = useBusinessStore()
+    business.subscribeToProfile = vi.fn()
   })
 
   function mountPage() {
