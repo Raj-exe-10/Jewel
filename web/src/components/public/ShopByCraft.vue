@@ -7,7 +7,7 @@ import { defaultSectionByAnchor } from '../../data/defaultSections'
 import { jewelryImageFor } from '../../data/storefrontMedia'
 import { useCatalogueStore } from '../../stores/catalogue'
 import type { HomepageSection, TaxonomyTilesContent } from '../../types/homepage'
-import SectionHeading from './SectionHeading.vue'
+import LuxuryDarkBand from './LuxuryDarkBand.vue'
 
 const props = defineProps<{ section?: HomepageSection }>()
 
@@ -34,15 +34,23 @@ void emblaRef
 </script>
 
 <template>
-  <section v-if="tiles.length > 0" :id="resolved.anchorId" class="mx-auto max-w-screen-2xl px-4 py-8">
-    <div class="relative mb-2">
-      <SectionHeading :title="resolved.title" :subtitle="resolved.subtitle" :icon="resolved.icon" />
-      <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
+  <LuxuryDarkBand v-if="tiles.length > 0" :id="resolved.anchorId">
+    <div class="mb-8 flex items-end justify-between gap-4">
+      <div>
+        <p class="mb-2 text-xs uppercase tracking-[0.35em] text-amore-gold">Discover</p>
+        <h2 class="font-display text-3xl text-amore-cream sm:text-4xl">
+          {{ resolved.title || 'Discover the Ruby Jewellery' }}
+        </h2>
+        <p v-if="resolved.subtitle" class="mt-2 max-w-lg text-sm text-amore-cream/70">
+          {{ resolved.subtitle }}
+        </p>
+      </div>
+      <div class="hidden gap-2 sm:flex">
         <button
           type="button"
           aria-label="Previous"
           data-testid="shop-craft-prev"
-          class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
+          class="border border-amore-cream/30 p-1.5 text-amore-cream transition hover:border-amore-gold hover:text-amore-gold"
           @click.stop="scrollPrev"
         >
           <ChevronLeftIcon class="h-4 w-4" />
@@ -51,7 +59,7 @@ void emblaRef
           type="button"
           aria-label="Next"
           data-testid="shop-craft-next"
-          class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-cream"
+          class="border border-amore-cream/30 p-1.5 text-amore-cream transition hover:border-amore-gold hover:text-amore-gold"
           @click.stop="scrollNext"
         >
           <ChevronRightIcon class="h-4 w-4" />
@@ -66,18 +74,26 @@ void emblaRef
           :key="tile.id"
           type="button"
           data-testid="craft-tile"
-          class="group relative mr-4 min-w-0 flex-[0_0_60%] overflow-hidden rounded-xl sm:flex-[0_0_35%] lg:flex-[0_0_22%]"
+          class="group mr-4 flex min-w-0 flex-[0_0_78%] flex-col border border-amore-cream/10 bg-amore-cream text-left sm:flex-[0_0_42%] lg:flex-[0_0_23%]"
           @click="nav.filterByCollection(tile.id)"
         >
-          <img
-            :src="tile.image"
-            :alt="tile.name"
-            class="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-105"
-          />
-          <span class="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-          <span class="absolute inset-x-0 bottom-3 text-center text-sm font-medium text-white">{{ tile.name }}</span>
+          <div class="aspect-[4/5] overflow-hidden bg-amore-blush">
+            <img
+              :src="tile.image"
+              :alt="tile.name"
+              class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            />
+          </div>
+          <div class="flex flex-1 flex-col gap-3 p-4">
+            <h3 class="font-display text-xl text-amore-charcoal">{{ tile.name }}</h3>
+            <span
+              class="mt-auto inline-flex w-full items-center justify-center bg-amore-maroon px-3 py-2.5 text-xs font-medium tracking-wide text-amore-cream transition group-hover:bg-amore-burgundy"
+            >
+              Explore Craft →
+            </span>
+          </div>
         </button>
       </div>
     </div>
-  </section>
+  </LuxuryDarkBand>
 </template>

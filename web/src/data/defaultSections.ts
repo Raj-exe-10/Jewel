@@ -17,6 +17,23 @@ function base(
   }
 }
 
+/**
+ * Default storefront layout — mirrors the Nayaban-style reference
+ * (maroon/gold/cream brand colors applied in CSS).
+ *
+ * Visible order:
+ * 1. Hero
+ * 2. Category cards
+ * 3. Diamonds & Engagement (split carousel)
+ * 4. Find the perfect Diamond (dark product grid)
+ * 5. Business / bridal feature banner
+ * 6. Discover the Ruby Jewellery (dark product grid)
+ * 7. Heritage / about
+ * 8. Instagram
+ *
+ * Blog is rendered by PublicHome between ruby and heritage.
+ * Video / style / studio / contact stay in the catalogue for admin use but are hidden.
+ */
 export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   base({
     id: 'default-hero',
@@ -29,33 +46,134 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
         {
           id: 'bridal',
           imageUrl: HERO_IMAGES.bridal,
-          eyebrow: 'New Season',
-          heading: 'Discover the Bridal Edit',
-          subheading: 'Kundan, polki, and antique pieces made to be heirlooms.',
-          ctaLabel: 'Shop Bridal',
+          eyebrow: '',
+          heading: 'The Perfect Jewels For You',
+          subheading:
+            'Welcoming in the season with an enchanting emerald & diamond necklace with earrings — handcrafted to be loved for a lifetime.',
+          ctaLabel: 'Buy Now',
           ctaTarget: { kind: 'bridal' },
         },
         {
           id: 'new-arrivals',
           imageUrl: HERO_IMAGES.newArrivals,
-          eyebrow: 'Just In',
+          eyebrow: '',
           heading: 'New Arrivals, Handcrafted with Love',
-          subheading: 'Everyday pieces that go from desk to dinner.',
-          ctaLabel: 'Shop New Arrivals',
-          ctaTarget: { kind: 'scroll', anchorId: 'shop-the-visuals' },
+          subheading: 'Everyday pieces that go from desk to dinner — light, luminous, and made to order.',
+          ctaLabel: 'Buy Now',
+          ctaTarget: { kind: 'scroll', anchorId: 'founders-favourites' },
         },
         {
           id: 'signature',
           imageUrl: HERO_IMAGES.signature,
-          eyebrow: "Founder's Picks",
+          eyebrow: '',
           heading: 'Signature Pieces, Made to Be Loved',
-          subheading: 'Our most-requested designs, curated by the Amore team.',
-          ctaLabel: 'Shop Signature Picks',
+          subheading: 'Our most-requested designs, curated by the Amore atelier for moments that matter.',
+          ctaLabel: 'Buy Now',
           ctaTarget: { kind: 'scroll', anchorId: 'founders-favourites' },
         },
       ],
     },
   }),
+  base({
+    id: 'default-categories',
+    type: 'category_grid',
+    title: 'Shop by Categories',
+    subtitle: 'Bracelet · Earrings · Couple Rings',
+    icon: '◈',
+    anchorId: 'shop-by-categories',
+    sortOrder: 1,
+    content: {
+      tileImageOverrides: {},
+      preferredLabels: ['Bracelet', 'Earrings', 'Couple Rings'],
+    },
+  }),
+  base({
+    id: 'default-founders',
+    type: 'product_carousel',
+    title: 'Diamonds & Engagement Ring',
+    subtitle:
+      'Discover timeless diamond and engagement pieces — curated signatures from the Amore atelier.',
+    icon: '◇',
+    anchorId: 'founders-favourites',
+    sortOrder: 2,
+    productSelectionMode: 'flag',
+    productFlag: 'isFounderFavourite',
+    content: { variant: 'carousel', band: 'light-split' },
+  }),
+  base({
+    id: 'default-catalogue',
+    type: 'catalogue_grid',
+    title: 'Find the perfect Diamond for',
+    subtitle: 'Browse our diamond edit and enquire on WhatsApp',
+    icon: '✦',
+    anchorId: 'catalogue',
+    sortOrder: 3,
+    content: {},
+  }),
+  base({
+    id: 'default-bridal',
+    type: 'product_carousel',
+    title: 'Bridal Ensembles',
+    subtitle: 'Statement sets designed for the big day — from kundan chokers to layered harams.',
+    icon: '♛',
+    anchorId: 'bridal',
+    sortOrder: 4,
+    productSelectionMode: 'flag',
+    productFlag: 'isBridal',
+    content: {
+      variant: 'bridal',
+      bannerImageUrl: BRIDAL_BANNER,
+      bannerEyebrow: 'B2B & Bridal',
+      bannerHeading: 'Get the best diamonds for your business',
+      bannerBody:
+        'Partner with Amore for curated diamond and bridal ensembles — crafted for retailers, stylists, and unforgettable celebrations.',
+      bannerCtaLabel: 'Explore Collection',
+    },
+  }),
+  base({
+    id: 'default-ruby',
+    type: 'product_carousel',
+    title: 'Discover the Ruby Jewellery',
+    subtitle: 'Rich colour, timeless craft — statement pieces for every occasion.',
+    icon: '❖',
+    anchorId: 'ruby-jewellery',
+    sortOrder: 5,
+    productSelectionMode: 'flag',
+    productFlag: 'isNewArrival',
+    content: { variant: 'carousel', band: 'dark-grid' },
+  }),
+  base({
+    id: 'default-about',
+    type: 'about',
+    title: 'Crafting Jewellery Since 1888',
+    anchorId: 'about',
+    sortOrder: 6,
+    content: {
+      imageUrl: FOUNDER_IMAGE,
+      eyebrow: 'Our Story',
+      bodyParagraphs: [
+        'Amore is a designer jewelry studio crafting handmade pieces that blend traditional Indian artistry with modern silhouettes — from statement bridal sets to everyday minimal wear. Every piece is made to order with care, and no two pieces are ever quite the same.',
+        "The beauty of Indian jewellery lies as much in its making as in its form — in the artisan's hand, art becomes craftsmanship.",
+      ],
+    },
+  }),
+  base({
+    id: 'default-instagram',
+    type: 'instagram_gallery',
+    title: 'Follow Along',
+    icon: '◎',
+    anchorId: 'instagram',
+    sortOrder: 7,
+    content: {
+      tiles: INSTAGRAM_TILES.map((tile) => ({
+        id: String(tile.id),
+        imageUrl: tile.image,
+        alt: 'Amore on Instagram',
+      })),
+    },
+  }),
+
+  // Kept for admin / optional restore — hidden from the reference homepage layout
   base({
     id: 'default-visuals',
     type: 'video_carousel',
@@ -63,7 +181,8 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     subtitle: 'Watch our pieces in motion — bridal edits, festive looks, and everyday glow',
     icon: '✦',
     anchorId: 'shop-the-visuals',
-    sortOrder: 1,
+    sortOrder: 90,
+    isVisible: false,
     content: {
       videos: VISUAL_VIDEOS.map((tile, index) => ({
         id: `video-${index}`,
@@ -75,35 +194,14 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     },
   }),
   base({
-    id: 'default-founders',
-    type: 'product_carousel',
-    title: "Founder's Favourites",
-    subtitle: 'Signature pieces our atelier returns to again and again',
-    icon: '◇',
-    anchorId: 'founders-favourites',
-    sortOrder: 2,
-    productSelectionMode: 'flag',
-    productFlag: 'isFounderFavourite',
-    content: { variant: 'carousel' },
-  }),
-  base({
     id: 'default-style',
     type: 'style_tiles',
     title: 'Shop the Style',
     subtitle: 'Find your piece by occasion or mood',
     icon: '✧',
     anchorId: 'shop-the-style',
-    sortOrder: 3,
-    content: { tileImageOverrides: {} },
-  }),
-  base({
-    id: 'default-categories',
-    type: 'category_grid',
-    title: 'Shop by Categories',
-    subtitle: 'Browse every silhouette in the Amore atelier',
-    icon: '◈',
-    anchorId: 'shop-by-categories',
-    sortOrder: 4,
+    sortOrder: 91,
+    isVisible: false,
     content: { tileImageOverrides: {} },
   }),
   base({
@@ -113,59 +211,17 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     subtitle: 'Kundan, polki, moissanite — choose your craft',
     icon: '❖',
     anchorId: 'shop-by-craft',
-    sortOrder: 5,
+    sortOrder: 92,
+    isVisible: false,
     content: { tileImageOverrides: {} },
-  }),
-  base({
-    id: 'default-bridal',
-    type: 'product_carousel',
-    title: 'Bridal Ensembles',
-    subtitle: 'Statement sets designed for the big day — from kundan chokers to layered harams.',
-    icon: '♛',
-    anchorId: 'bridal',
-    sortOrder: 6,
-    productSelectionMode: 'flag',
-    productFlag: 'isBridal',
-    content: {
-      variant: 'bridal',
-      bannerImageUrl: BRIDAL_BANNER,
-      bannerEyebrow: 'Bridal',
-      bannerHeading: 'Curated Bridal Ensembles',
-      bannerBody: 'Statement sets designed for the big day — from kundan chokers to layered harams.',
-      bannerCtaLabel: 'Explore Bridal Collection',
-    },
-  }),
-  base({
-    id: 'default-catalogue',
-    type: 'catalogue_grid',
-    title: 'Shop the Collection',
-    subtitle: 'Browse, filter, and enquire on WhatsApp',
-    icon: '✦',
-    anchorId: 'catalogue',
-    sortOrder: 7,
-    content: {},
-  }),
-  base({
-    id: 'default-about',
-    type: 'about',
-    title: 'The Hands Behind Amore',
-    anchorId: 'about',
-    sortOrder: 8,
-    content: {
-      imageUrl: FOUNDER_IMAGE,
-      eyebrow: 'Our Story',
-      bodyParagraphs: [
-        'Amore is a designer jewelry studio crafting handmade pieces that blend traditional Indian artistry with modern silhouettes — from statement bridal sets to everyday minimal wear. Every piece is made to order with care, and no two pieces are ever quite the same.',
-        "The beauty of Indian jewellery lies as much in its making as in its form — in the artisan's hand, art becomes craftsmanship.",
-      ],
-    },
   }),
   base({
     id: 'default-studio',
     type: 'studio_location',
     title: 'By Appointment Only',
     anchorId: 'studio',
-    sortOrder: 9,
+    sortOrder: 93,
+    isVisible: false,
     content: {
       imageUrl: STUDIO_IMAGE,
       eyebrow: 'Visit the Studio',
@@ -179,7 +235,8 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     type: 'contact',
     title: "Let's Talk Jewelry",
     anchorId: 'contact',
-    sortOrder: 10,
+    sortOrder: 94,
+    isVisible: false,
     content: {
       bodyParagraphs: [
         'Have a question about a piece, custom orders, or bridal sets? Reach out — we reply personally.',
@@ -188,35 +245,30 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   }),
 ]
 
+function sectionByType(type: SectionType): HomepageSection {
+  const found = DEFAULT_HOMEPAGE_SECTIONS.find((section) => section.type === type)
+  if (!found) throw new Error(`No default section for type "${type}"`)
+  return found
+}
+
+function sectionById(id: string): HomepageSection {
+  const found = DEFAULT_HOMEPAGE_SECTIONS.find((section) => section.id === id)
+  if (!found) throw new Error(`No default section for id "${id}"`)
+  return found
+}
+
 const DRAFT_TEMPLATES: Record<SectionType, () => HomepageSectionInput> = {
-  hero_banner: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[0]!),
-  video_carousel: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[1]!),
-  product_carousel: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[2]!),
-  style_tiles: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[3]!),
-  category_grid: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[4]!),
-  collection_tiles: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[5]!),
-  catalogue_grid: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[7]!),
-  about: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[8]!),
-  instagram_gallery: () =>
-    omitIds(
-      base({
-        id: 'draft-instagram',
-        type: 'instagram_gallery',
-        title: 'Follow Along',
-        icon: '◎',
-        anchorId: 'instagram',
-        sortOrder: 0,
-        content: {
-          tiles: INSTAGRAM_TILES.map((tile) => ({
-            id: String(tile.id),
-            imageUrl: tile.image,
-            alt: 'Amore on Instagram',
-          })),
-        },
-      }),
-    ),
-  studio_location: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[9]!),
-  contact: () => omitIds(DEFAULT_HOMEPAGE_SECTIONS[10]!),
+  hero_banner: () => omitIds(sectionByType('hero_banner')),
+  video_carousel: () => omitIds(sectionByType('video_carousel')),
+  product_carousel: () => omitIds(sectionById('default-founders')),
+  style_tiles: () => omitIds(sectionByType('style_tiles')),
+  category_grid: () => omitIds(sectionByType('category_grid')),
+  collection_tiles: () => omitIds(sectionByType('collection_tiles')),
+  catalogue_grid: () => omitIds(sectionByType('catalogue_grid')),
+  about: () => omitIds(sectionByType('about')),
+  instagram_gallery: () => omitIds(sectionByType('instagram_gallery')),
+  studio_location: () => omitIds(sectionByType('studio_location')),
+  contact: () => omitIds(sectionByType('contact')),
 }
 
 function omitIds(section: HomepageSection): HomepageSectionInput {

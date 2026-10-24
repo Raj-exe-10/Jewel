@@ -121,7 +121,9 @@ test.describe('Products CRUD + homepage', () => {
     await loginAs(page, OWNER_EMAIL)
     await expect(page.getByTestId('section-list').locator('li').first()).toBeVisible({ timeout: 15_000 })
 
-    const aboutRow = page.locator('[data-testid="section-list"] li', { hasText: 'The Hands Behind Amore' })
+    const aboutRow = page.locator('[data-testid="section-list"] li', {
+      hasText: /Crafting Jewellery Since 1888|The Hands Behind Amore/,
+    })
     if ((await aboutRow.count()) === 0) {
       await page.getByTestId('restore-defaults').click()
       await page.getByTestId('confirm-dialog-confirm').click()
@@ -145,7 +147,7 @@ test.describe('Products CRUD + homepage', () => {
 
     const publicPage = await context.newPage()
     await publicPage.goto('/')
-    await expect(publicPage.getByRole('heading', { name: 'The Hands Behind Amore' })).toHaveCount(0, {
+    await expect(publicPage.getByRole('heading', { name: /Crafting Jewellery Since 1888|The Hands Behind Amore/ })).toHaveCount(0, {
       timeout: 15_000,
     })
     await publicPage.close()

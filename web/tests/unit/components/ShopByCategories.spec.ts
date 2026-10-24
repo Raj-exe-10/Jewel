@@ -84,7 +84,11 @@ describe('ShopByCategories', () => {
     store.$patch({ categories })
     const wrapper = mount(ShopByCategories)
 
-    await wrapper.findAll('[data-testid="category-tile"]')[1]!.trigger('click')
+    const earringTile = wrapper.findAll('[data-testid="category-tile"]').find((tile) =>
+      tile.text().includes('Earrings'),
+    )
+    expect(earringTile).toBeTruthy()
+    await earringTile!.trigger('click')
 
     expect(store.filters.categoryId).toBe('cat-2')
   })

@@ -20,8 +20,15 @@ const props = withDefaults(
     responsiveCompact?: boolean
     /** Page to return to from the product detail view. */
     detailOrigin?: 'home' | 'collection'
+    /** WhatsApp CTA label — homepage reference uses "Add To Cart". */
+    ctaLabel?: string
   }>(),
-  { compact: false, responsiveCompact: false, detailOrigin: undefined },
+  {
+    compact: false,
+    responsiveCompact: false,
+    detailOrigin: undefined,
+    ctaLabel: 'Enquire on WhatsApp',
+  },
 )
 
 const wishlist = useWishlistStore()
@@ -46,13 +53,27 @@ const detailTo = computed(() => {
   <article
     :id="`product-${product.id}`"
     data-testid="product-card"
-    class="group relative flex scroll-mt-28 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow duration-300 hover:shadow-lg"
+    class="group relative flex scroll-mt-28 flex-col overflow-hidden border border-amore-burgundy/20 bg-amore-cream transition duration-300 hover:border-amore-gold/50"
   >
+    <span
+      class="pointer-events-none absolute z-10 bg-amore-gold font-medium text-amore-maroon shadow-sm"
+      :class="
+        compact
+          ? 'left-1.5 top-1.5 px-1.5 py-0.5 text-[10px]'
+          : responsiveCompact
+            ? 'left-2 top-2 px-2 py-1 text-xs sm:left-1.5 sm:top-1.5 sm:px-1.5 sm:py-0.5 sm:text-[10px]'
+            : 'left-2 top-2 px-2 py-1 text-xs'
+      "
+      aria-hidden="true"
+    >
+      {{ formattedPrice }}
+    </span>
+
     <button
       type="button"
       data-testid="wishlist-toggle"
       :aria-pressed="isWishlisted"
-      class="absolute z-10 rounded-full bg-white/90 shadow transition hover:bg-white"
+      class="absolute z-10 bg-white/95 shadow transition hover:bg-white"
       :class="
         compact
           ? 'right-1.5 top-1.5 p-1.5'
@@ -73,7 +94,7 @@ const detailTo = computed(() => {
     </button>
 
     <router-link :to="detailTo" data-testid="product-detail-link" class="flex flex-1 flex-col">
-      <div class="overflow-hidden">
+      <div class="overflow-hidden bg-white">
         <img
           :src="photoUrl"
           :alt="product.name"
@@ -105,7 +126,7 @@ const detailTo = computed(() => {
           {{ categoryName }}
         </p>
         <h3
-          class="font-display text-neutral-900 group-hover:underline"
+          class="font-display text-amore-charcoal group-hover:underline"
           :class="
             compact
               ? 'text-base leading-snug'
@@ -129,7 +150,7 @@ const detailTo = computed(() => {
           {{ product.description }}
         </p>
         <p
-          class="mt-1 font-medium text-neutral-900"
+          class="mt-1 font-medium text-amore-charcoal"
           :class="compact ? 'text-sm' : responsiveCompact ? 'sm:text-sm lg:text-base' : ''"
         >
           {{ formattedPrice }}
@@ -145,7 +166,7 @@ const detailTo = computed(() => {
         target="_blank"
         rel="noopener noreferrer"
         data-testid="whatsapp-link"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-whatsapp font-medium text-white transition hover:bg-whatsapp-dark"
+        class="inline-flex w-full items-center justify-center gap-2 bg-amore-maroon font-medium text-amore-cream transition hover:bg-amore-burgundy"
         :class="
           compact
             ? 'px-2 py-1.5 text-xs'
@@ -156,7 +177,7 @@ const detailTo = computed(() => {
         @click.stop
       >
         <WhatsAppIcon />
-        Enquire on WhatsApp
+        {{ ctaLabel }}
       </a>
     </div>
   </article>

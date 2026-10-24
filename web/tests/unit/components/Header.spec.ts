@@ -109,14 +109,12 @@ describe('Header', () => {
     expect(document.querySelector('[data-testid="wishlist-drawer"]')).not.toBeNull()
   })
 
-  it('places the Amore brand logo before the navigation links', () => {
+  it('centers the Amore brand logo in the header row', () => {
     const wrapper = mountHeader()
-    const row = wrapper.get('[data-testid="brand-logo"]').element.parentElement!
-    const children = Array.from(row.children)
-    const logoIndex = children.findIndex((el) => el.getAttribute('data-testid') === 'brand-logo')
-    const navIndex = children.findIndex((el) => el.tagName === 'NAV')
-    expect(logoIndex).toBeGreaterThanOrEqual(0)
-    expect(navIndex).toBeGreaterThan(logoIndex)
+    const logo = wrapper.get('[data-testid="brand-logo"]')
+    expect(logo.exists()).toBe(true)
+    expect(logo.classes().join(' ')).toMatch(/absolute|md:static/)
+    expect(logo.text()).toMatch(/amore/i)
   })
 
   it('toggles the search overlay when the search icon is clicked', async () => {
@@ -167,8 +165,8 @@ describe('Header', () => {
   })
 
   it('scrolls New Arrivals to the product carousel anchor', async () => {
-    document.body.innerHTML += '<div id="shop-the-visuals-products"></div>'
-    const el = document.getElementById('shop-the-visuals-products')!
+    document.body.innerHTML += '<div id="founders-favourites-products"></div>'
+    const el = document.getElementById('founders-favourites-products')!
     el.getBoundingClientRect = () =>
       ({ top: 400, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
@@ -181,7 +179,7 @@ describe('Header', () => {
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(push).toHaveBeenCalledWith({ path: '/', hash: '#shop-the-visuals-products' })
+    expect(push).toHaveBeenCalledWith({ path: '/', hash: '#founders-favourites-products' })
   })
 
   it('scrolls Signature Picks to the product carousel anchor', async () => {

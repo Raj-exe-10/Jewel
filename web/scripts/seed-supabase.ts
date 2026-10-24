@@ -58,11 +58,19 @@ async function ensureUser(email: string, password: string, displayName: string) 
 }
 
 async function seedHomepageSections() {
+  const force = process.env.FORCE_HOMEPAGE_LAYOUT === '1'
   const { count } = await admin.from('homepage_sections').select('*', { count: 'exact', head: true })
-  if ((count ?? 0) > 0) {
-    console.log('homepage_sections already populated; skipping')
+  if ((count ?? 0) > 0 && !force) {
+    console.log('homepage_sections already populated; skipping (set FORCE_HOMEPAGE_LAYOUT=1 to replace)')
     return
   }
+
+  if (force && (count ?? 0) > 0) {
+    const { error: deleteError } = await admin.from('homepage_sections').delete().neq('id', '')
+    if (deleteError) throw deleteError
+    console.log('Cleared existing homepage_sections for layout replace')
+  }
+
   const now = Date.now()
   const rows = DEFAULT_HOMEPAGE_SECTIONS.map((section) => {
     const input = toFirestoreSection(section)
@@ -87,6 +95,22 @@ async function seedHomepageSections() {
   const { error } = await admin.from('homepage_sections').insert(rows)
   if (error) throw error
   console.log(`Seeded ${rows.length} homepage sections`)
+
+  if (force) {
+    const snapshot = DEFAULT_HOMEPAGE_SECTIONS.map((section, index) => ({
+      ...toFirestoreSection(section),
+      id: section.id,
+      sortOrder: index,
+    }))
+    const { error: layoutError } = await admin.from('homepage_config').upsert({
+      id: 'default_layout',
+      payload: { sections: snapshot },
+      updated_at: now,
+      updated_by: 'seed',
+    })
+    if (layoutError) throw layoutError
+    console.log('Updated homepage_config default_layout snapshot')
+  }
 }
 
 async function main() {

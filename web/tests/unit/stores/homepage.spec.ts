@@ -85,7 +85,8 @@ describe('homepage store', () => {
 
   it('falls back to default storefront sections when none are loaded yet', () => {
     const store = useHomepageStore()
-    expect(store.displaySections).toHaveLength(DEFAULT_HOMEPAGE_SECTIONS.length)
+    const visibleDefaults = DEFAULT_HOMEPAGE_SECTIONS.filter((section) => section.isVisible)
+    expect(store.displaySections).toHaveLength(visibleDefaults.length)
     expect(store.displaySections[0]?.type).toBe('hero_banner')
   })
 

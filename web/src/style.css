@@ -2,20 +2,21 @@
 
 /*
  * Tailwind v4 uses CSS-based theme configuration instead of tailwind.config.js.
- * Placeholder brand tokens below — replace with real Amore brand colors/fonts
- * once provided (see Requirements/Website_and_App_Requirements_Document.md, Section 8).
+ * Amore luxury storefront — royal burgundy, antique gold, warm cream.
  */
 @theme {
-  --font-display: "Playfair Display", ui-serif, Georgia, serif;
-  --font-brand: "Cinzel Decorative", "Playfair Display", ui-serif, Georgia, serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-amore-cream: #faf6f0;
-  --color-amore-theme: #f3e6e8;
-  --color-amore-charcoal: #262220;
-  --color-amore-burgundy: #5e0b15;
-  --color-amore-header: #52060f;
-  --color-amore-wordmark: #b08b57;
-  --color-amore-gold: #b08d57;
+  --font-display: "Cormorant Garamond", "Playfair Display", ui-serif, Georgia, serif;
+  --font-brand: "Cinzel Decorative", "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-body: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-amore-cream: #faf7f2;
+  --color-amore-theme: #f7f1ea;
+  --color-amore-blush: #f3ebe3;
+  --color-amore-charcoal: #1f1512;
+  --color-amore-burgundy: #4a0d18;
+  --color-amore-header: #3d0a14;
+  --color-amore-maroon: #3d0a14;
+  --color-amore-wordmark: #d4af37;
+  --color-amore-gold: #d4af37;
   --color-whatsapp: #25d366;
   --color-whatsapp-dark: #1ebe57;
 }
@@ -23,4 +24,37 @@
 body {
   font-family: var(--font-body);
   color: var(--color-amore-charcoal);
+  background-color: var(--color-amore-cream);
+}
+
+/* Subtle damask-style ornament for dark luxury bands */
+.amore-ornament {
+  background-color: var(--color-amore-maroon);
+  background-image:
+    radial-gradient(ellipse at 12% 18%, color-mix(in srgb, var(--color-amore-gold) 14%, transparent) 0%, transparent 42%),
+    radial-gradient(ellipse at 88% 82%, color-mix(in srgb, var(--color-amore-gold) 12%, transparent) 0%, transparent 45%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.06'%3E%3Cpath d='M30 0l2 12-8 6 8 6-2 12 10-8 10 8-2-12 8-6-8-6 2-12-10 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Cream category cards with faint corner filigree (reference overlap strip) */
+.amore-category-card::before,
+.amore-category-card::after {
+  content: "";
+  position: absolute;
+  width: 5.5rem;
+  height: 5.5rem;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg width='88' height='88' viewBox='0 0 88 88' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23b08b57' stroke-width='1'%3E%3Cpath d='M8 44c12-18 28-26 36-28 8 2 24 10 36 28-12 18-28 26-36 28-8-2-24-10-36-28z'/%3E%3Cpath d='M44 16v56M16 44h56'/%3E%3Ccircle cx='44' cy='44' r='6'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+.amore-category-card::before {
+  top: 0.65rem;
+  right: 0.65rem;
+}
+.amore-category-card::after {
+  bottom: 0.65rem;
+  left: 0.65rem;
+  transform: rotate(180deg);
 }

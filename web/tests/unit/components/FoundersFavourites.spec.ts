@@ -111,7 +111,7 @@ describe('FoundersFavourites', () => {
     expect(cards).toHaveLength(4)
     expect(wrapper.find('#founders-favourites-products').exists()).toBe(true)
     expect(cards[0].find('img').classes()).toContain('sm:aspect-square')
-    expect(cards[0].element.parentElement?.classList.contains('lg:flex-[0_0_22%]')).toBe(true)
+    expect(cards[0].element.parentElement?.classList.contains('lg:flex-[0_0_48%]')).toBe(true)
     expect(cards[0].get('[data-testid="product-detail-link"]').attributes('href')).toBe(
       '/product/p1?from=home',
     )

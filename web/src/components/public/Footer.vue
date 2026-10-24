@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCatalogueNav } from '../../composables/useCatalogueNav'
 import { buildGeneralEnquiryLink, buildInstagramProfileLink } from '../../composables/useWhatsAppLink'
 import { useCatalogueStore } from '../../stores/catalogue'
@@ -14,13 +14,25 @@ const instagramLink = computed(() => buildInstagramProfileLink(props.instagramHa
 const handleLabel = computed(() => `@${props.instagramHandle.replace(/^@/, '')}`)
 const year = new Date().getFullYear()
 const brandLogoSrc = '/brand/amore-logo.jpg'
+const newsletterEmail = ref('')
+const newsletterNote = ref('')
+
+function onNewsletterSubmit() {
+  const value = newsletterEmail.value.trim()
+  if (!value) {
+    newsletterNote.value = 'Enter your email to stay in touch.'
+    return
+  }
+  newsletterNote.value = 'Thank you — we will be in touch soon.'
+  newsletterEmail.value = ''
+}
 </script>
 
 <template>
-  <footer class="border-t border-neutral-200 bg-amore-theme text-neutral-600">
-    <div class="mx-auto max-w-screen-2xl px-4 py-12">
-      <div class="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
-        <div class="w-full shrink-0 lg:w-72">
+  <footer class="bg-amore-maroon text-amore-cream/85">
+    <div class="mx-auto max-w-screen-2xl px-4 py-14">
+      <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+        <div>
           <router-link
             to="/"
             data-testid="footer-brand-logo"
@@ -29,94 +41,129 @@ const brandLogoSrc = '/brand/amore-logo.jpg'
             <img
               :src="brandLogoSrc"
               alt=""
-              class="h-24 w-24 rounded-full object-cover ring-1 ring-amore-wordmark/40 md:h-28 md:w-28"
+              class="h-16 w-16 rounded-full object-cover ring-1 ring-amore-gold/40"
             />
-            <span class="font-brand text-2xl font-bold uppercase tracking-wide text-amore-burgundy">AMORE</span>
+            <span class="font-brand text-xl font-bold uppercase tracking-[0.2em] text-amore-gold">AMORE</span>
           </router-link>
-          <p class="mt-3 max-w-xs text-sm leading-relaxed">
+          <p class="mt-4 max-w-xs text-sm leading-relaxed text-amore-cream/70">
             Handcrafted designer jewelry — bridal sets to everyday pieces, one enquiry away on WhatsApp.
           </p>
         </div>
 
-        <div class="grid flex-1 grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-8 lg:gap-y-6">
-          <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Explore</h3>
-            <ul class="space-y-2 text-sm">
-              <li><a href="#about" class="hover:text-neutral-900">About</a></li>
-              <li>
-                <button type="button" class="text-left hover:text-neutral-900" @click="nav.filterByBridal">
-                  Bridal/Wedding
-                </button>
-              </li>
-              <li><a href="#contact" class="hover:text-neutral-900">Contact</a></li>
-            </ul>
-          </div>
+        <div>
+          <h3 class="mb-4 font-display text-lg text-amore-gold">Company</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#about" class="transition hover:text-amore-gold">About</a></li>
+            <li>
+              <button type="button" class="text-left transition hover:text-amore-gold" @click="nav.filterByBridal">
+                Bridal / Wedding
+              </button>
+            </li>
+            <li><a href="#contact" class="transition hover:text-amore-gold">Contact</a></li>
+            <li>
+              <a :href="whatsappLink" target="_blank" rel="noopener noreferrer" class="transition hover:text-amore-gold">
+                WhatsApp Us
+              </a>
+            </li>
+          </ul>
 
-          <div v-if="catalogue.categories.length > 0">
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Categories</h3>
+          <template v-if="catalogue.categories.length > 0">
+            <h3 class="mb-3 mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-amore-cream/50">Categories</h3>
             <ul class="space-y-2 text-sm" data-testid="footer-categories">
               <li v-for="category in catalogue.categories" :key="category.id">
                 <button
                   type="button"
-                  class="text-left hover:text-neutral-900"
+                  class="text-left transition hover:text-amore-gold"
                   @click="nav.filterByCategory(category.id)"
                 >
                   {{ category.name }}
                 </button>
               </li>
             </ul>
-          </div>
+          </template>
+        </div>
 
-          <div v-if="catalogue.collections.length > 0">
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Collections</h3>
+        <div>
+          <h3 class="mb-4 font-display text-lg text-amore-gold">Follow Us</h3>
+          <ul class="space-y-2 text-sm">
+            <li>
+              <a :href="instagramLink" target="_blank" rel="noopener noreferrer" class="transition hover:text-amore-gold">
+                {{ handleLabel }}
+              </a>
+            </li>
+          </ul>
+
+          <template v-if="catalogue.collections.length > 0">
+            <h3 class="mb-3 mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-amore-cream/50">Collections</h3>
             <ul class="space-y-2 text-sm" data-testid="footer-collections">
               <li v-for="collectionItem in catalogue.collections" :key="collectionItem.id">
                 <button
                   type="button"
-                  class="text-left hover:text-neutral-900"
+                  class="text-left transition hover:text-amore-gold"
                   @click="nav.filterByCollection(collectionItem.id)"
                 >
                   {{ collectionItem.name }}
                 </button>
               </li>
             </ul>
-          </div>
+          </template>
 
-          <div v-if="catalogue.styleTags.length > 0">
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Styles</h3>
+          <template v-if="catalogue.styleTags.length > 0">
+            <h3 class="mb-3 mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-amore-cream/50">Styles</h3>
             <ul class="space-y-2 text-sm" data-testid="footer-styles">
               <li v-for="styleTag in catalogue.styleTags" :key="styleTag.id">
                 <button
                   type="button"
-                  class="text-left hover:text-neutral-900"
+                  class="text-left transition hover:text-amore-gold"
                   @click="nav.filterByStyleTag(styleTag.id)"
                 >
                   {{ styleTag.name }}
                 </button>
               </li>
             </ul>
-          </div>
+          </template>
 
-          <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Get in Touch</h3>
-            <ul class="space-y-2 text-sm">
-              <li>
-                <a :href="whatsappLink" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-900">
-                  WhatsApp Us
-                </a>
-              </li>
-              <li>
-                <a :href="instagramLink" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-900">
-                  {{ handleLabel }}
-                </a>
-              </li>
-            </ul>
+          <div class="mt-8">
+            <h3 class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-amore-cream/50">Payment Methods</h3>
+            <div class="flex flex-wrap gap-2" aria-label="Accepted payment methods">
+              <span
+                v-for="method in ['Visa', 'Mastercard', 'UPI', 'RuPay']"
+                :key="method"
+                class="border border-amore-cream/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-amore-cream/70"
+              >
+                {{ method }}
+              </span>
+            </div>
           </div>
+        </div>
+
+        <div>
+          <h3 class="mb-4 font-display text-lg text-amore-gold">Newsletter</h3>
+          <p class="mb-4 text-sm leading-relaxed text-amore-cream/70">
+            Subscribe for new arrivals, bridal edits, and atelier notes.
+          </p>
+          <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="onNewsletterSubmit">
+            <label class="sr-only" for="footer-newsletter-email">Email</label>
+            <input
+              id="footer-newsletter-email"
+              v-model="newsletterEmail"
+              type="email"
+              placeholder="Your email"
+              class="w-full border border-amore-cream/20 bg-amore-header px-3 py-2.5 text-sm text-amore-cream placeholder:text-amore-cream/40 focus:border-amore-gold focus:outline-none"
+            />
+            <button
+              type="submit"
+              class="shrink-0 bg-amore-gold px-5 py-2.5 text-sm font-medium tracking-wide text-amore-maroon transition hover:brightness-105"
+            >
+              Sign Up
+            </button>
+          </form>
+          <p v-if="newsletterNote" class="mt-2 text-xs text-amore-gold/90">{{ newsletterNote }}</p>
         </div>
       </div>
     </div>
 
-    <div class="border-t border-neutral-200 px-4 py-4 text-center text-xs text-neutral-400">
+    <div class="border-t border-amore-cream/10 px-4 py-4 text-center text-xs text-amore-cream/50">
       &copy; {{ year }} Amore. All rights reserved.
     </div>
   </footer>

@@ -10,7 +10,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="bg-amore-charcoal px-4 py-2 text-center text-xs tracking-wide text-amore-cream">
+  <div class="bg-amore-maroon px-4 py-1.5 text-center text-[11px] tracking-[0.14em] text-amore-cream/90">
     {{ message }}
   </div>
 </template>

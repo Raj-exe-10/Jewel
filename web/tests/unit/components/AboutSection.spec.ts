@@ -52,7 +52,7 @@ import AboutSection from '../../../src/components/public/AboutSection.vue'
 describe('AboutSection', () => {
   it('renders the founder story heading and copy', () => {
     const wrapper = mount(AboutSection)
-    expect(wrapper.text()).toContain('The Hands Behind Amore')
+    expect(wrapper.text()).toContain('Crafting Jewellery Since 1888')
     expect(wrapper.text()).toContain('Amore is a designer jewelry studio')
   })
 

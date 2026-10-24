@@ -11,7 +11,7 @@ describe('SectionList', () => {
     ]
     const wrapper = mount(SectionList, { props: { sections } })
 
-    expect(wrapper.get('[data-testid="section-list"]').text()).toContain("Founder's Favourites")
+    expect(wrapper.get('[data-testid="section-list"]').text()).toContain('Diamonds & Engagement Ring')
     expect(wrapper.text()).toContain('Hidden')
   })
 

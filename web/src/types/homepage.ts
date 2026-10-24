@@ -52,8 +52,12 @@ export interface VideoCarouselContent {
   videos: SectionVideo[]
 }
 
+export type ProductCarouselBand = 'light-split' | 'dark-grid'
+
 export interface ProductCarouselContent {
   variant: 'carousel' | 'bridal'
+  /** Visual layout for carousel variant — split showcase vs dark product grid. */
+  band?: ProductCarouselBand
   bannerImageUrl?: string
   bannerEyebrow?: string
   bannerHeading?: string
@@ -63,6 +67,8 @@ export interface ProductCarouselContent {
 
 export interface TaxonomyTilesContent {
   tileImageOverrides?: Record<string, string>
+  /** Preferred display labels for the first category cards (reference layout). */
+  preferredLabels?: string[]
 }
 
 export interface AboutContent {

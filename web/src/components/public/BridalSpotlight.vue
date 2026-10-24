@@ -12,29 +12,48 @@ const content = computed(() => resolved.value.content as ProductCarouselContent)
 </script>
 
 <template>
-  <section :id="resolved.anchorId" class="bg-amore-theme py-8">
+  <section :id="resolved.anchorId" class="bg-gradient-to-br from-amore-cream via-amore-blush to-[#efe4d6] py-12 sm:py-16">
     <div class="mx-auto max-w-screen-2xl px-4">
       <div
-        class="mx-auto grid max-w-5xl overflow-hidden rounded-2xl bg-amore-charcoal text-amore-cream sm:grid-cols-2"
+        class="grid items-center gap-10 lg:grid-cols-2 lg:gap-14"
         data-testid="bridal-banner"
       >
-        <img
-          :src="content.bannerImageUrl"
-          :alt="content.bannerHeading ?? resolved.title"
-          class="h-full min-h-48 w-full object-cover sm:min-h-64"
-        />
-        <div class="flex min-h-48 flex-col justify-center gap-3 p-6 sm:min-h-64 sm:p-8">
-          <p class="text-xs uppercase tracking-[0.3em] text-amore-gold">{{ content.bannerEyebrow }}</p>
-          <h2 class="font-display text-2xl sm:text-3xl">{{ content.bannerHeading }}</h2>
-          <p class="text-sm text-amore-cream/80 sm:text-base">{{ content.bannerBody }}</p>
+        <div class="max-w-xl">
+          <p class="mb-3 text-xs uppercase tracking-[0.35em] text-amore-gold">
+            {{ content.bannerEyebrow || 'For Business' }}
+          </p>
+          <h2 class="font-display text-3xl leading-tight text-amore-charcoal sm:text-4xl lg:text-5xl">
+            {{ content.bannerHeading || 'Get the best diamonds for your business' }}
+          </h2>
+          <p class="mt-4 text-sm leading-relaxed text-neutral-600 sm:text-base">
+            {{ content.bannerBody || resolved.subtitle }}
+          </p>
           <button
             type="button"
             data-testid="bridal-cta"
-            class="mt-2 w-fit rounded-full bg-white px-5 py-2.5 text-sm font-medium text-amore-charcoal transition hover:bg-amore-theme"
+            class="mt-7 bg-amore-maroon px-6 py-3 text-sm font-medium tracking-wide text-amore-cream transition hover:bg-amore-burgundy"
             @click="nav.filterByBridal"
           >
-            {{ content.bannerCtaLabel }}
+            {{ content.bannerCtaLabel || 'Explore Collection' }}
           </button>
+        </div>
+
+        <div class="relative mx-auto w-full max-w-md lg:max-w-lg">
+          <div
+            class="pointer-events-none absolute -left-3 -top-3 h-16 w-16 border-l-2 border-t-2 border-amore-gold sm:-left-5 sm:-top-5"
+            aria-hidden="true"
+          />
+          <div
+            class="pointer-events-none absolute -bottom-3 -right-3 h-16 w-16 border-b-2 border-r-2 border-amore-gold sm:-bottom-5 sm:-right-5"
+            aria-hidden="true"
+          />
+          <div class="border-2 border-amore-gold/70 bg-amore-cream p-2 shadow-[0_20px_50px_-28px_rgba(61,10,20,0.45)] sm:p-3">
+            <img
+              :src="content.bannerImageUrl"
+              :alt="content.bannerHeading ?? resolved.title"
+              class="aspect-[4/5] w-full object-cover"
+            />
+          </div>
         </div>
       </div>
     </div>

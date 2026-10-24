@@ -7,8 +7,8 @@ import { cataloguePreview } from '../../lib/cataloguePreview'
 import { defaultSectionByAnchor } from '../../data/defaultSections'
 import { useCatalogueStore } from '../../stores/catalogue'
 import type { HomepageSection } from '../../types/homepage'
+import LuxuryDarkBand from './LuxuryDarkBand.vue'
 import ProductCard from './ProductCard.vue'
-import SectionHeading from './SectionHeading.vue'
 
 const props = defineProps<{ businessPhoneE164: string; section?: HomepageSection }>()
 
@@ -35,26 +35,27 @@ void emblaRef
 </script>
 
 <template>
-  <section :id="resolved.anchorId || 'catalogue'" class="mx-auto max-w-screen-2xl px-4 py-8">
-    <div class="relative mb-2">
+  <LuxuryDarkBand :id="resolved.anchorId || 'catalogue'">
+    <div class="relative mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
       <button
         type="button"
         data-testid="catalogue-heading-link"
-        class="w-full cursor-pointer rounded-sm text-left transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amore-header"
+        class="max-w-xl cursor-pointer rounded-sm text-left transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amore-gold"
         @click="onHeadingClick"
       >
-        <SectionHeading
-          :title="resolved.title"
-          :subtitle="resolved.subtitle"
-          :icon="resolved.icon"
-        />
+        <p class="mb-2 text-xs uppercase tracking-[0.35em] text-amore-gold">Collection</p>
+        <h2 class="font-display text-3xl text-amore-cream sm:text-4xl">
+          {{ resolved.title || 'Find the perfect Diamond for' }}
+        </h2>
+        <p v-if="resolved.subtitle" class="mt-2 text-sm text-amore-cream/70">{{ resolved.subtitle }}</p>
       </button>
-      <div class="absolute right-0 top-8 z-10 hidden gap-2 sm:flex">
+
+      <div class="flex gap-2">
         <button
           type="button"
           aria-label="Previous"
           data-testid="catalogue-prev"
-          class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-theme"
+          class="border border-amore-cream/30 p-1.5 text-amore-cream transition hover:border-amore-gold hover:text-amore-gold"
           @click.stop="scrollPrev"
         >
           <ChevronLeftIcon class="h-4 w-4" />
@@ -63,7 +64,7 @@ void emblaRef
           type="button"
           aria-label="Next"
           data-testid="catalogue-next"
-          class="rounded-full border border-amore-gold/40 bg-white p-1.5 shadow-sm transition hover:bg-amore-theme"
+          class="border border-amore-cream/30 p-1.5 text-amore-cream transition hover:border-amore-gold hover:text-amore-gold"
           @click.stop="scrollNext"
         >
           <ChevronRightIcon class="h-4 w-4" />
@@ -74,7 +75,7 @@ void emblaRef
     <p
       v-if="previewProducts.length === 0"
       data-testid="empty-state"
-      class="py-10 text-center text-neutral-500"
+      class="py-10 text-center text-amore-cream/60"
     >
       No products available yet.
     </p>
@@ -85,7 +86,7 @@ void emblaRef
           <div
             v-for="product in previewProducts"
             :key="product.id"
-            class="mr-4 min-w-0 flex-[0_0_70%] sm:flex-[0_0_32%] lg:flex-[0_0_22%]"
+            class="mr-4 min-w-0 flex-[0_0_78%] sm:flex-[0_0_42%] lg:flex-[0_0_23%]"
           >
             <ProductCard
               :product="product"
@@ -93,20 +94,21 @@ void emblaRef
               :business-phone-e164="businessPhoneE164"
               responsive-compact
               detail-origin="home"
+              cta-label="Add To Cart"
             />
           </div>
         </div>
       </div>
 
-      <div class="mt-8 flex justify-center">
+      <div class="mt-10 flex justify-center">
         <router-link
           to="/collection"
           data-testid="catalogue-view-more"
-          class="rounded-full border border-amore-wordmark/50 bg-amore-header px-8 py-3 text-sm font-medium tracking-wide text-amore-cream transition hover:bg-amore-header/90"
+          class="border border-amore-gold/50 bg-transparent px-8 py-3 text-sm font-medium tracking-wide text-amore-cream transition hover:bg-amore-gold hover:text-amore-maroon"
         >
           View More
         </router-link>
       </div>
     </template>
-  </section>
+  </LuxuryDarkBand>
 </template>

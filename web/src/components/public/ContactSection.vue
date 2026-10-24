@@ -16,10 +16,11 @@ const instagramLink = computed(() => buildInstagramProfileLink(props.instagramHa
 <template>
   <section
     :id="resolved.anchorId"
-    class="scroll-mt-28 bg-[color-mix(in_srgb,var(--color-amore-header)_14%,white)] py-10 md:scroll-mt-32"
+    class="scroll-mt-28 bg-amore-blush py-12 md:scroll-mt-32 sm:py-16"
   >
     <div class="mx-auto max-w-3xl px-4 text-center">
-      <h2 class="mb-3 font-display text-2xl text-amore-header">{{ resolved.title }}</h2>
+      <p class="mb-2 text-xs uppercase tracking-[0.35em] text-amore-gold">Contact</p>
+      <h2 class="mb-3 font-display text-3xl text-amore-charcoal sm:text-4xl">{{ resolved.title }}</h2>
       <p v-for="(paragraph, index) in content.bodyParagraphs" :key="index" class="mb-8 text-neutral-600">
         {{ paragraph }}
       </p>
@@ -28,7 +29,7 @@ const instagramLink = computed(() => buildInstagramProfileLink(props.instagramHa
           :href="whatsappLink"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-md bg-whatsapp px-6 py-3 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
+          class="inline-flex items-center gap-2 bg-whatsapp px-6 py-3 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
         >
           <WhatsAppIcon />
           Chat on WhatsApp
@@ -38,7 +39,7 @@ const instagramLink = computed(() => buildInstagramProfileLink(props.instagramHa
           target="_blank"
           rel="noopener noreferrer"
           data-testid="instagram-cta"
-          class="inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-95"
+          class="inline-flex items-center gap-2 border border-amore-burgundy/20 bg-white px-6 py-3 text-sm font-medium text-amore-charcoal transition hover:border-amore-gold"
         >
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path

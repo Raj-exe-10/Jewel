@@ -17,21 +17,21 @@ const whatsappLink = computed(() => buildGeneralEnquiryLink(props.businessPhoneE
 </script>
 
 <template>
-  <section :id="resolved.anchorId" class="bg-amore-theme py-8">
-    <div class="mx-auto grid max-w-screen-2xl items-center gap-8 px-4 sm:grid-cols-2">
+  <section :id="resolved.anchorId" class="bg-amore-cream py-12 sm:py-16">
+    <div class="mx-auto grid max-w-screen-2xl items-center gap-8 px-4 sm:grid-cols-2 sm:gap-12">
       <img
         src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&q=80"
         alt="Amore studio"
-        class="aspect-[4/3] w-full rounded-2xl object-cover"
+        class="aspect-[4/3] w-full border border-amore-burgundy/15 object-cover"
         data-testid="studio-image"
       />
       <div>
-        <p class="mb-2 text-xs uppercase tracking-[0.3em] text-amore-gold">{{ content.eyebrow }}</p>
-        <h2 class="mb-4 font-display text-2xl text-neutral-900">{{ resolved.title }}</h2>
+        <p class="mb-2 text-xs uppercase tracking-[0.35em] text-amore-gold">{{ content.eyebrow }}</p>
+        <h2 class="mb-4 font-display text-3xl text-amore-charcoal sm:text-4xl">{{ resolved.title }}</h2>
         <p v-for="(paragraph, index) in content.bodyParagraphs" :key="index" class="mb-1 text-neutral-700">
           {{ paragraph }}
         </p>
-        <p class="mb-4 text-sm text-neutral-500" data-testid="studio-address">
+        <p class="mb-6 text-sm text-neutral-500" data-testid="studio-address">
           {{ displayAddress }}
         </p>
         <div class="flex flex-wrap gap-3">
@@ -40,7 +40,7 @@ const whatsappLink = computed(() => buildGeneralEnquiryLink(props.businessPhoneE
             target="_blank"
             rel="noopener noreferrer"
             data-testid="studio-directions-link"
-            class="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-medium text-neutral-800 transition hover:bg-white"
+            class="border border-amore-burgundy/25 px-5 py-2.5 text-sm font-medium text-amore-charcoal transition hover:border-amore-gold"
           >
             Get Directions
           </a>
@@ -49,7 +49,7 @@ const whatsappLink = computed(() => buildGeneralEnquiryLink(props.businessPhoneE
             target="_blank"
             rel="noopener noreferrer"
             data-testid="studio-appointment-link"
-            class="inline-flex items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
+            class="inline-flex items-center gap-2 bg-whatsapp px-5 py-2.5 text-sm font-medium text-white transition hover:bg-whatsapp-dark"
           >
             <WhatsAppIcon />
             Book an Appointment

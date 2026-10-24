@@ -102,7 +102,7 @@ describe('BridalSpotlight', () => {
 
     expect(wrapper.get('[data-testid="bridal-banner"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="product-card"]')).toHaveLength(0)
-    expect(wrapper.text()).toContain('Curated Bridal Ensembles')
+    expect(wrapper.text()).toContain('Get the best diamonds for your business')
   })
 
   it('still renders the banner when there are no bridal products', () => {

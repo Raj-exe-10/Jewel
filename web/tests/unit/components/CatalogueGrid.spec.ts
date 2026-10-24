@@ -130,7 +130,7 @@ describe('CatalogueGrid', () => {
     expect(wrapper.findAll('[data-testid="product-card"]')).toHaveLength(8)
     const firstCard = wrapper.findAll('[data-testid="product-card"]')[0]
     expect(firstCard.find('img').classes()).toContain('sm:aspect-square')
-    expect(firstCard.element.parentElement?.classList.contains('lg:flex-[0_0_22%]')).toBe(true)
+    expect(firstCard.element.parentElement?.classList.contains('lg:flex-[0_0_23%]')).toBe(true)
     expect(firstCard.get('[data-testid="product-detail-link"]').attributes('href')).toBe(
       '/product/p9?from=home',
     )
